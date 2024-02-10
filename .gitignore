@@ -39,3 +39,5 @@ build/
 .vs/
 .vscode/
 .idea/
+/.vs/SFML/v16
+/.vs
