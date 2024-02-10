@@ -59,7 +59,7 @@ void ensureExtensionsInit()
         initialized = true;
 
 #ifdef SFML_OPENGL_ES
-        gladLoadGLES1(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
+        gladLoadGLES2(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
 #else
         gladLoadGL(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
 #endif

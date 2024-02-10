@@ -1,0 +1,21 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": ""
+    },
+    {
+      "name": "Existing Cache",
+      "cacheRoot": "C:/Users/cutel/source/sfml-builds/SFML/build/arm64-v8a",
+      "inheritEnvironments": [],
+      "variables": []
+    }
+  ]
+}
