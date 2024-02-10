@@ -183,7 +183,7 @@ struct Shader::UniformBinder : private NonCopyable
     ////////////////////////////////////////////////////////////
     UniformBinder(Shader& shader, const std::string& name) :
     savedProgram(0),
-    currentProgram(castToGlHandle(shader.m_shaderProgram)),
+    currentProgram(static_cast<GLint>(castToGlHandle(shader.m_shaderProgram))),
     location(-1)
     {
         if (currentProgram)
@@ -846,6 +846,103 @@ bool Shader::isGeometryAvailable()
     }
 
     return available;
+}
+
+////////////////////////////////////////////////////////////
+const Shader& Shader::getDefaultShader()
+{
+    static Shader instance;
+    static bool first = true;
+
+    if (first)
+    {
+        instance.loadFromMemory(
+#ifndef SFML_OPENGL_ES
+            "#version 120\n"
+#else
+            "#version 100\n"
+#endif
+            "attribute vec2 position;"
+            "attribute vec4 color;"
+            "varying vec4 sf_color;"
+            "uniform mat4 sf_modelview;"
+            "uniform mat4 sf_projection;"
+            "void main()"
+            "{"
+            "    vec2 pos = position;"
+            "    sf_color = color;"
+            "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
+            "}",
+
+#ifndef SFML_OPENGL_ES
+            "#version 120\n"
+#else
+            "#version 100\n"
+#endif
+            "precision mediump float;"
+            "varying vec4 sf_color;"
+            "void main()"
+            "{"
+            "    gl_FragColor = sf_color;"
+            "}"
+        );
+        first = false;
+    }
+
+    return instance;
+}
+
+
+////////////////////////////////////////////////////////////
+const Shader& Shader::getDefaultTexShader()
+{
+    static Shader instance;
+    static bool first = true;
+
+    if (first)
+    {
+        instance.loadFromMemory(
+#ifndef SFML_OPENGL_ES
+            "#version 120\n"
+#else
+            "#version 100\n"
+#endif
+            "attribute vec2 position;"
+            "attribute vec4 color;"
+            "attribute vec2 texCoord;"
+            "varying vec4 sf_color;"
+            "varying vec2 sf_texCoord;"
+            "uniform mat4 sf_modelview;"
+            "uniform mat4 sf_projection;"
+
+            "void main()"
+            "{"
+            "    vec2 pos = position;"
+            "    sf_color = color;"
+            "    sf_texCoord = texCoord;"
+            "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
+            "}",
+
+#ifndef SFML_OPENGL_ES
+            "#version 120\n"
+#else
+            "#version 100\n"
+#endif
+            "precision mediump float;"
+            "varying vec4 sf_color;"
+            "varying vec2 sf_texCoord;"
+            "uniform sampler2D sf_sampler;"
+            "uniform mat4 sf_texture;"
+            "void main()"
+            "{"
+            "    vec4 coord = sf_texture * vec4(sf_texCoord, 0.0, 1.0);"
+            "    gl_FragColor = texture2D(sf_sampler, coord.xy) * sf_color;"
+            "}"
+        );
+        first = false;
+    }
+
+    return instance;
 }
 
 
