@@ -363,7 +363,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
                 data = reinterpret_cast<const char*>(m_cache.vertexCache);
 
             glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 0));
-            glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(Vertex), data + 8));
+            glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), data + 8));
             if (enableTexCoordsArray)
                 glCheck(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 12));
         }
@@ -432,6 +432,8 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
         // Bind vertex buffer
         VertexBuffer::bind(&vertexBuffer);
 
+#ifndef SFML_OPENGL_ES
+
         // Always enable texture coordinates
         if (!m_cache.enable || !m_cache.texCoordsArrayEnabled)
             glCheck(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
@@ -439,6 +441,17 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
         glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), reinterpret_cast<const void*>(0)));
         glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), reinterpret_cast<const void*>(8)));
         glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), reinterpret_cast<const void*>(12)));
+
+#else
+
+        if (!m_cache.enable || !m_cache.texCoordsArrayEnabled)
+            glCheck(glEnableVertexAttribArray(2));
+
+        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(0)));
+        glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), reinterpret_cast<const void*>(8)));
+        glCheck(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(12)));
+
+#endif
 
         drawPrimitives(vertexBuffer.getPrimitiveType(), firstVertex, vertexCount);
 
@@ -764,6 +777,21 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
     if (!m_cache.glStatesSet)
         resetGLStates();
 
+#ifdef SFML_OPENGL_ES
+
+    if (!states.shader && !states.texture)
+    {
+        const Shader*& shader = const_cast<const Shader*&>(states.shader);
+        shader = &Shader::getDefaultShader();
+    }
+    else if (!states.shader && states.texture)
+    {
+        const Shader*& shader = const_cast<const Shader*&>(states.shader);
+        shader = &Shader::getDefaultTexShader();
+    }
+
+#endif
+
     if (useVertexCache)
     {
         // Since vertices are transformed, we must use an identity transform to render them
@@ -776,7 +804,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
 #else
 
             Shader* shader = const_cast<Shader*>(states.shader);
-            shader->setUniform("sf_modelview", (Glsl::Mat4)Transform::Identity.getMatrix());
+            shader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(Transform::Identity.getMatrix()));
 
 #endif
 
@@ -792,38 +820,43 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
 #else
 
         Shader* shader = const_cast<Shader*>(states.shader);
-        shader->setUniform("sf_modelview", (Glsl::Mat4)states.transform.getMatrix());
+        shader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(states.transform.getMatrix()));
 
 #endif
     }
 
-    // Apply the view
-    if (!m_cache.enable || m_cache.viewChanged)
-    {
 #ifndef SFML_OPENGL_ES
 
+    // Apply the view
+    if (!m_cache.enable || m_cache.viewChanged)
         applyCurrentView();
 
 #else
 
-        // Set the viewport
-        IntRect viewport = getViewport(m_view);
-        int top = static_cast<int>(getSize().y) - (viewport.top + viewport.height);
-        glCheck(glViewport(viewport.left, top, viewport.width, viewport.height));
+    // Set the viewport
+    IntRect viewport = getViewport(m_view);
+    int top = static_cast<int>(getSize().y) - (viewport.top + viewport.height);
+    glCheck(glViewport(viewport.left, top, viewport.width, viewport.height));
 
-
+    {
         // Set the projection matrix
         Shader* shader = const_cast<Shader*>(states.shader);
-        shader->setUniform("sf_projection", (Glsl::Mat4)m_view.getTransform().getMatrix());
-
-        m_cache.viewChanged = false;
+        shader->setUniform("sf_projection", static_cast<Glsl::Mat4>(m_view.getTransform().getMatrix()));
+    }
 
 #endif
-    }
+
+
 
     // Apply the blend mode
     if (!m_cache.enable || (states.blendMode != m_cache.lastBlendMode))
         applyBlendMode(states.blendMode);
+
+#ifdef SFML_OPENGL_ES
+
+    bool setTexture = false;
+
+#endif
 
     // Apply the texture
     if (!m_cache.enable || (states.texture && states.texture->m_fboAttachment))
@@ -834,14 +867,61 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         // This saves us from having to call glFlush() in
         // RenderTextureImplFBO which can be quite costly
         // See: https://www.khronos.org/opengl/wiki/Memory_Model
+
+
         applyTexture(states.texture);
+
+#ifdef SFML_OPENGL_ES
+
+        if (states.texture)
+            setTexture = true;
+
+#endif
+
     }
     else
     {
         Uint64 textureId = states.texture ? states.texture->m_cacheId : 0;
         if (textureId != m_cache.lastTextureId)
+        {
+
             applyTexture(states.texture);
+
+#ifdef SFML_OPENGL_ES
+
+            if (states.texture)
+                setTexture = true;
+
+#endif
+        }
     }
+
+#ifdef SFML_OPENGL_ES
+
+    if (setTexture)
+    {
+        GLfloat matrix[16] = { 1.f, 0.f, 0.f, 0.f,
+                                  0.f, 1.f, 0.f, 0.f,
+                                  0.f, 0.f, 1.f, 0.f,
+                                  0.f, 0.f, 0.f, 1.f};
+
+        // If non-normalized coordinates (= pixels) are requested, we need to
+        // setup scale factors that convert the range [0 .. size] to [0 .. 1]
+        matrix[0] = 1.f / static_cast<float>(states.texture->m_actualSize.x);
+        matrix[5] = 1.f / static_cast<float>(states.texture->m_actualSize.y);
+
+        // If pixels are flipped we must invert the Y axis
+        if (states.texture->m_pixelsFlipped)
+        {
+            matrix[5] = -matrix[5];
+            matrix[13] = static_cast<float>(states.texture->m_size.y) / static_cast<float>(states.texture->m_actualSize.y);
+        }
+
+        Shader* shader = const_cast<Shader*>(states.shader);
+        shader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix));
+    }
+
+#endif
 
     // Apply the shader
     if (states.shader)
