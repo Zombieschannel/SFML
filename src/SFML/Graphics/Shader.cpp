@@ -856,12 +856,9 @@ const Shader& Shader::getDefaultShader()
 
     if (first)
     {
+#ifdef SFML_OPENGL_ES
         instance.loadFromMemory(
-#ifndef SFML_OPENGL_ES
-            "#version 120\n"
-#else
             "#version 100\n"
-#endif
             "attribute vec2 position;"
             "attribute vec4 color;"
             "varying vec4 sf_color;"
@@ -874,11 +871,7 @@ const Shader& Shader::getDefaultShader()
             "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
             "}",
 
-#ifndef SFML_OPENGL_ES
-            "#version 120\n"
-#else
             "#version 100\n"
-#endif
             "precision mediump float;"
             "varying vec4 sf_color;"
             "void main()"
@@ -886,6 +879,22 @@ const Shader& Shader::getDefaultShader()
             "    gl_FragColor = sf_color;"
             "}"
         );
+#else
+        instance.loadFromMemory(
+            "#version 120\n"
+            "void main()"
+            "{"
+            "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
+            "    gl_FrontColor = gl_Color;"
+            "}",
+
+            "#version 120\n"
+            "void main()"
+            "{"
+            "    gl_FragColor = gl_Color;"
+            "}"
+        );
+#endif
         first = false;
     }
 
@@ -901,12 +910,9 @@ const Shader& Shader::getDefaultTexShader()
 
     if (first)
     {
+#ifdef SFML_OPENGL_ES
         instance.loadFromMemory(
-#ifndef SFML_OPENGL_ES
-            "#version 120\n"
-#else
             "#version 100\n"
-#endif
             "attribute vec2 position;"
             "attribute vec4 color;"
             "attribute vec2 texCoord;"
@@ -914,7 +920,6 @@ const Shader& Shader::getDefaultTexShader()
             "varying vec2 sf_texCoord;"
             "uniform mat4 sf_modelview;"
             "uniform mat4 sf_projection;"
-
             "void main()"
             "{"
             "    vec2 pos = position;"
@@ -923,11 +928,7 @@ const Shader& Shader::getDefaultTexShader()
             "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
             "}",
 
-#ifndef SFML_OPENGL_ES
-            "#version 120\n"
-#else
             "#version 100\n"
-#endif
             "precision mediump float;"
             "varying vec4 sf_color;"
             "varying vec2 sf_texCoord;"
@@ -939,6 +940,25 @@ const Shader& Shader::getDefaultTexShader()
             "    gl_FragColor = texture2D(sf_sampler, coord.xy) * sf_color;"
             "}"
         );
+#else
+        instance.loadFromMemory(
+            "#version 120\n"
+            "void main()"
+            "{"
+            "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
+            "    gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;"
+            "    gl_FrontColor = gl_Color;"
+            "}",
+
+            "#version 120\n"
+            "uniform sampler2D texture;"
+            "void main()"
+            "{"
+            "    vec4 pixel = texture2D(texture, gl_TexCoord[0].xy);"
+            "    gl_FragColor = gl_Color * pixel;"
+            "}"
+        );
+#endif
         first = false;
     }
 
