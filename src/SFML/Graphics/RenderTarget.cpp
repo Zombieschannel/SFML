@@ -439,7 +439,7 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
 
         if (!m_cache.enable || !m_cache.texCoordsArrayEnabled)
             if (m_cache.texAttrib >= 0)
-                glCheck(glEnableVertexAttribArray(2));
+                glCheck(glEnableVertexAttribArray(m_cache.texAttrib));
 
         if (m_cache.posAttrib >= 0)
             glCheck(glVertexAttribPointer(m_cache.posAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(0)));
@@ -611,9 +611,12 @@ void RenderTarget::resetGLStates()
         glCheck(glEnableClientState(GL_COLOR_ARRAY));
         glCheck(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
 #else
-        glCheck(glDisableVertexAttribArray(0));
-        glCheck(glDisableVertexAttribArray(1));
-        glCheck(glDisableVertexAttribArray(2));
+        if (m_cache.posAttrib >= 0)
+            glCheck(glDisableVertexAttribArray(m_cache.posAttrib));
+        if (m_cache.colAttrib >= 0)
+            glCheck(glDisableVertexAttribArray(m_cache.colAttrib));
+        if (m_cache.texAttrib >= 0)
+            glCheck(glDisableVertexAttribArray(m_cache.texAttrib));
 #endif
 
         m_cache.glStatesSet = true;
