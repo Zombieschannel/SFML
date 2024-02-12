@@ -474,6 +474,10 @@ private:
         bool      texCoordsArrayEnabled; //!< Is GL_TEXTURE_COORD_ARRAY client state enabled?
         bool      useVertexCache; //!< Did we previously use the vertex cache?
         Vertex    vertexCache[VertexCacheSize]; //!< Pre-transformed vertices cache
+        Uint32    programChanged;
+        Int32    posAttrib;
+        Int32    colAttrib;
+        Int32    texAttrib;
     };
 
     ////////////////////////////////////////////////////////////
