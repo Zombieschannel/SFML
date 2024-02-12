@@ -183,7 +183,7 @@ struct Shader::UniformBinder : private NonCopyable
     ////////////////////////////////////////////////////////////
     UniformBinder(Shader& shader, const std::string& name) :
     savedProgram(0),
-    currentProgram(static_cast<GLEXT_GLhandle>(castToGlHandle(shader.m_shaderProgram))),
+    currentProgram(static_cast<GLint>(castToGlHandle(shader.m_shaderProgram))),
     location(-1)
     {
         if (currentProgram)
