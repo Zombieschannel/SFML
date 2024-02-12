@@ -159,6 +159,10 @@ m_cache      (),
 m_id         (0)
 {
     m_cache.glStatesSet = false;
+    m_cache.programChanged = 0;
+    m_cache.posAttrib = -1;
+    m_cache.colAttrib = -1;
+    m_cache.texAttrib = -1;
 }
 
 
@@ -344,13 +348,6 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 
         // Check if texture coordinates array is needed, and update client state accordingly
         bool enableTexCoordsArray = (states.texture || states.shader);
-        if (!m_cache.enable || (enableTexCoordsArray != m_cache.texCoordsArrayEnabled))
-        {
-            if (enableTexCoordsArray)
-                glCheck(glEnableVertexAttribArray(2));
-            else
-                glCheck(glDisableVertexAttribArray(2));
-        }
 
         // If we switch between non-cache and cache mode or enable texture
         // coordinates we need to set up the pointers to the vertices' components
@@ -362,17 +359,13 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
             if (useVertexCache)
                 data = reinterpret_cast<const char*>(m_cache.vertexCache);
 
-            glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 0));
-            glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), data + 8));
+            if (m_cache.posAttrib >= 0)
+                glCheck(glVertexAttribPointer(m_cache.posAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 0));
+            if (m_cache.colAttrib >= 0)
+                glCheck(glVertexAttribPointer(m_cache.colAttrib, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), data + 8));
             if (enableTexCoordsArray)
-                glCheck(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 12));
-        }
-        else if (enableTexCoordsArray && !m_cache.texCoordsArrayEnabled)
-        {
-            // If we enter this block, we are already using our internal vertex cache
-            const char* data = reinterpret_cast<const char*>(m_cache.vertexCache);
-
-            glCheck(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 12));
+                if (m_cache.texAttrib >= 0)
+                    glCheck(glVertexAttribPointer(m_cache.texAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 12));
         }
 
 #endif
@@ -445,11 +438,15 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
 #else
 
         if (!m_cache.enable || !m_cache.texCoordsArrayEnabled)
-            glCheck(glEnableVertexAttribArray(2));
+            if (m_cache.texAttrib >= 0)
+                glCheck(glEnableVertexAttribArray(2));
 
-        glCheck(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(0)));
-        glCheck(glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), reinterpret_cast<const void*>(8)));
-        glCheck(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(12)));
+        if (m_cache.posAttrib >= 0)
+            glCheck(glVertexAttribPointer(m_cache.posAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(0)));
+        if (m_cache.colAttrib >= 0)
+            glCheck(glVertexAttribPointer(m_cache.colAttrib, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), reinterpret_cast<const void*>(8)));
+        if (m_cache.texAttrib >= 0)
+            glCheck(glVertexAttribPointer(m_cache.texAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(12)));
 
 #endif
 
@@ -602,10 +599,10 @@ void RenderTarget::resetGLStates()
         // Define the default OpenGL states
         glCheck(glDisable(GL_CULL_FACE));
         glCheck(glDisable(GL_DEPTH_TEST));
-        glCheck(glDisable(GL_ALPHA_TEST));
         glCheck(glEnable(GL_BLEND));
 
 #ifndef SFML_OPENGL_ES
+        glCheck(glDisable(GL_ALPHA_TEST));
         glCheck(glDisable(GL_LIGHTING));
         glCheck(glEnable(GL_TEXTURE_2D));
         glCheck(glMatrixMode(GL_MODELVIEW));
@@ -614,9 +611,9 @@ void RenderTarget::resetGLStates()
         glCheck(glEnableClientState(GL_COLOR_ARRAY));
         glCheck(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
 #else
-        glCheck(glEnableVertexAttribArray(0));
-        glCheck(glEnableVertexAttribArray(1));
-        glCheck(glEnableVertexAttribArray(2));
+        glCheck(glDisableVertexAttribArray(0));
+        glCheck(glDisableVertexAttribArray(1));
+        glCheck(glDisableVertexAttribArray(2));
 #endif
 
         m_cache.glStatesSet = true;
@@ -792,6 +789,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
 
 #endif
 
+
     if (useVertexCache)
     {
         // Since vertices are transformed, we must use an identity transform to render them
@@ -807,7 +805,6 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
             shader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(Transform::Identity.getMatrix()));
 
 #endif
-
 
         }
     }
@@ -926,6 +923,26 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
     // Apply the shader
     if (states.shader)
         applyShader(states.shader);
+
+
+#ifdef SFML_OPENGL_ES
+
+    if (states.shader && m_cache.programChanged != states.shader->getNativeHandle())
+    {
+        m_cache.programChanged = states.shader->getNativeHandle();
+        m_cache.posAttrib = glGetAttribLocation(states.shader->getNativeHandle(), "position");
+        m_cache.colAttrib = glGetAttribLocation(states.shader->getNativeHandle(), "color");
+        m_cache.texAttrib = glGetAttribLocation(states.shader->getNativeHandle(), "texCoord");
+        if (m_cache.posAttrib >= 0)
+            glCheck(glEnableVertexAttribArray(m_cache.posAttrib));
+        if (m_cache.colAttrib >= 0)
+            glCheck(glEnableVertexAttribArray(m_cache.colAttrib));
+        if (m_cache.texAttrib >= 0)
+            glCheck(glEnableVertexAttribArray(m_cache.texAttrib));
+    }
+
+#endif
+
 }
 
 
