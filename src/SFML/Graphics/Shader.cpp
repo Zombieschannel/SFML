@@ -189,22 +189,14 @@ struct Shader::UniformBinder : private NonCopyable
         if (currentProgram)
         {
 
+// Enable program object
 #ifndef SFML_OPENGL_ES
-
-            // Enable program object
             glCheck(savedProgram = GLEXT_glGetHandle(GLEXT_GL_PROGRAM_OBJECT));
-            if (currentProgram != savedProgram)
-                glCheck(GLEXT_glUseProgramObject(currentProgram));
-
 #else
-
-            // Enable program object
             glCheck(glGetIntegerv(GL_CURRENT_PROGRAM, &savedProgram));
+#endif
             if (currentProgram != savedProgram)
                 glCheck(GLEXT_glUseProgramObject(currentProgram));
-
-#endif
-
             // Store uniform location for further use outside constructor
             location = shader.getUniformLocation(name);
         }
