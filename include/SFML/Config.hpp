@@ -96,6 +96,11 @@
         // NetBSD
         #define SFML_SYSTEM_NETBSD
 
+    #elif defined(EMSCRIPTEN)
+
+        // Emscripten
+        #define SFML_SYSTEM_EMSCRIPTEN
+
     #else
 
         // Unsupported UNIX system

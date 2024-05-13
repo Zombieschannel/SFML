@@ -51,6 +51,10 @@
 
     #include <SFML/Window/Android/SensorImpl.hpp>
 
+#elif defined(SFML_SYSTEM_EMSCRIPTEN)
+
+    #include <SFML/Window/Emscripten/SensorImpl.hpp>
+
 #endif
 
 

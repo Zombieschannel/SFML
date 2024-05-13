@@ -39,6 +39,12 @@ m_socket    (priv::SocketImpl::invalidSocket()),
 m_isBlocking(true)
 {
 
+#ifdef SFML_SYSTEM_EMSCRIPTEN
+    
+    m_isBlocking = false;
+
+#endif
+
 }
 
 

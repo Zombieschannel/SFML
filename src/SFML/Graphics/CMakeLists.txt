@@ -84,10 +84,132 @@ set(RENDER_TEXTURE_SRC
 )
 source_group("render texture" FILES ${RENDER_TEXTURE_SRC})
 
+if(SFML_OS_EMSCRIPTEN)
+    set(JPEG_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/extlibs/headers/jpeg")
+    set(FREETYPE_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/extlibs/headers/freetype2")
+
+    file(GLOB FREETYPE_PRIVATE_HEADERS "${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/include/internal/*.h")
+
+    set(EXTLIBS_SRC
+        ${FREETYPE_PRIVATE_HEADERS}
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/autofit/autofit.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftadvanc.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftbbox.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftbdf.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftbitmap.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftcalc.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftcid.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftdbgmem.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftdebug.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftfstype.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftgasp.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftgloadr.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftglyph.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftgxval.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftinit.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftlcdfil.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftmm.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftobjs.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftotval.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftoutln.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftpatent.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftpfr.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftrfork.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftsnames.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftstream.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftstroke.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftsynth.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftsystem.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/fttrigon.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/fttype1.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftutil.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftwinfnt.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/base/ftxf86.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/bdf/bdf.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/bzip2/ftbzip2.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/cache/ftcache.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/cff/cff.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/cid/type1cid.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/gzip/ftgzip.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/lzw/ftlzw.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/pcf/pcf.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/pfr/pfr.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/psaux/psaux.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/pshinter/pshinter.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/psnames/psmodule.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/raster/raster.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/sfnt/sfnt.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/smooth/smooth.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/truetype/truetype.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/type1/type1.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/type42/type42.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/winfonts/winfnt.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jaricom.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcapimin.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcapistd.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcarith.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jccoefct.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jccolor.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcdctmgr.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jchuff.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcinit.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcmainct.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcmarker.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcmaster.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcomapi.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcparam.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcprepct.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jcsample.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jctrans.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdapimin.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdapistd.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdarith.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdatadst.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdatasrc.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdcoefct.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdcolor.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jddctmgr.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdhuff.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdinput.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdmainct.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdmarker.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdmaster.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdmerge.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdpostct.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdsample.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jdtrans.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jerror.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jfdctflt.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jfdctfst.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jfdctint.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jidctflt.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jidctfst.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jidctint.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jmemmgr.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jmemnobs.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jquant1.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jquant2.c
+        ${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg/jutils.c
+    )
+    source_group("extlibs" FILES ${EXTLIBS_SRC})
+
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/truetype")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/sfnt")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/autofit")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/smooth")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/raster")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/psaux")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/psnames")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libfreetype/include")
+    include_directories("${PROJECT_SOURCE_DIR}/extlibs/libs-emscripten/libjpeg")
+
+    add_definitions(-DFT2_BUILD_LIBRARY)
+
+endif()
 
 # define the sfml-graphics target
 sfml_add_library(sfml-graphics
-                 SOURCES ${SRC} ${DRAWABLES_SRC} ${RENDER_TEXTURE_SRC} ${STB_SRC})
+                 SOURCES ${SRC} ${DRAWABLES_SRC} ${RENDER_TEXTURE_SRC} ${STB_SRC} ${EXTLIBS_SRC})
 
 # setup dependencies
 target_link_libraries(sfml-graphics PUBLIC sfml-window)

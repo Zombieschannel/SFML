@@ -40,8 +40,17 @@
     #endif
 #endif
 
+#ifndef SFML_SYSTEM_EMSCRIPTEN
+
 #include <al.h>
 #include <alc.h>
+
+#else
+
+#include <AL/al.h>
+#include <AL/alc.h>
+
+#endif
 
 namespace sf
 {
