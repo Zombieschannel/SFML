@@ -779,16 +779,12 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
 
 #ifdef SFML_OPENGL_ES
 
+    Shader* usedShader = const_cast<Shader*>(states.shader);
+
     if (!states.shader && !states.texture)
-    {
-        const Shader*& shader = const_cast<const Shader*&>(states.shader);
-        shader = &Shader::getDefaultShader();
-    }
+        usedShader = const_cast<Shader*>(&Shader::getDefaultShader());
     else if (!states.shader && states.texture)
-    {
-        const Shader*& shader = const_cast<const Shader*&>(states.shader);
-        shader = &Shader::getDefaultTexShader();
-    }
+        usedShader = const_cast<Shader*>(&Shader::getDefaultTexShader());
 
 #endif
 
@@ -804,8 +800,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
 
 #else
 
-            Shader* shader = const_cast<Shader*>(states.shader);
-            shader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(Transform::Identity.getMatrix()));
+            usedShader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(Transform::Identity.getMatrix()));
 
 #endif
 
@@ -819,8 +814,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
 
 #else
 
-        Shader* shader = const_cast<Shader*>(states.shader);
-        shader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(states.transform.getMatrix()));
+        usedShader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(states.transform.getMatrix()));
 
 #endif
     }
@@ -840,8 +834,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
 
     {
         // Set the projection matrix
-        Shader* shader = const_cast<Shader*>(states.shader);
-        shader->setUniform("sf_projection", static_cast<Glsl::Mat4>(m_view.getTransform().getMatrix()));
+        usedShader->setUniform("sf_projection", static_cast<Glsl::Mat4>(m_view.getTransform().getMatrix()));
     }
 
 #endif
@@ -903,7 +896,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         GLfloat matrix[16] = { 1.f, 0.f, 0.f, 0.f,
                                   0.f, 1.f, 0.f, 0.f,
                                   0.f, 0.f, 1.f, 0.f,
-                                  0.f, 0.f, 0.f, 1.f};
+                                  0.f, 0.f, 0.f, 1.f };
 
         // If non-normalized coordinates (= pixels) are requested, we need to
         // setup scale factors that convert the range [0 .. size] to [0 .. 1]
@@ -917,25 +910,17 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
             matrix[13] = static_cast<float>(states.texture->m_size.y) / static_cast<float>(states.texture->m_actualSize.y);
         }
 
-        Shader* shader = const_cast<Shader*>(states.shader);
-        shader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix));
+        usedShader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix));
     }
 
-#endif
+    applyShader(usedShader);
 
-    // Apply the shader
-    if (states.shader)
-        applyShader(states.shader);
-
-
-#ifdef SFML_OPENGL_ES
-
-    if (states.shader && m_cache.programChanged != states.shader->getNativeHandle())
+    if (m_cache.programChanged != usedShader->getNativeHandle())
     {
-        m_cache.programChanged = states.shader->getNativeHandle();
-        m_cache.posAttrib = glGetAttribLocation(states.shader->getNativeHandle(), "position");
-        m_cache.colAttrib = glGetAttribLocation(states.shader->getNativeHandle(), "color");
-        m_cache.texAttrib = glGetAttribLocation(states.shader->getNativeHandle(), "texCoord");
+        m_cache.programChanged = usedShader->getNativeHandle();
+        m_cache.posAttrib = glGetAttribLocation(usedShader->getNativeHandle(), "position");
+        m_cache.colAttrib = glGetAttribLocation(usedShader->getNativeHandle(), "color");
+        m_cache.texAttrib = glGetAttribLocation(usedShader->getNativeHandle(), "texCoord");
         if (m_cache.posAttrib >= 0)
             glCheck(glEnableVertexAttribArray(m_cache.posAttrib));
         if (m_cache.colAttrib >= 0)
@@ -943,6 +928,12 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         if (m_cache.texAttrib >= 0)
             glCheck(glEnableVertexAttribArray(m_cache.texAttrib));
     }
+
+#else
+
+    // Apply the shader
+    if (states.shader)
+        applyShader(states.shader);
 
 #endif
 
@@ -965,9 +956,17 @@ void RenderTarget::drawPrimitives(PrimitiveType type, std::size_t firstVertex, s
 ////////////////////////////////////////////////////////////
 void RenderTarget::cleanupDraw(const RenderStates& states)
 {
+#ifdef SFML_OPENGL_ES
+
+    applyShader(NULL);
+
+#else
+
     // Unbind the shader, if any
     if (states.shader)
         applyShader(NULL);
+
+#endif
 
     // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
     // This prevents a bug where some drivers do not clear RenderTextures properly.
