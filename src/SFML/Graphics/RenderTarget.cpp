@@ -911,6 +911,14 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         }
 
         usedShader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix));
+        // Defines an uniform that allows shaders to scale its texcoords depending on their size and not on their actual size
+        if (states.texture->m_actualSize.x != 0 && states.texture->m_actualSize.y != 0) {
+            GLfloat factor_npot[2] = {
+                static_cast<GLfloat>(states.texture->m_size.x) / states.texture->m_actualSize.x,
+                static_cast<GLfloat>(states.texture->m_size.y) / states.texture->m_actualSize.y
+            };
+            usedShader->setUniform("factor_npot", Glsl::Vec2 { factor_npot[0], factor_npot[1] });
+        }
     }
 
     applyShader(usedShader);
