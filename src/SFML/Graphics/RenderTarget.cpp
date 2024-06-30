@@ -351,7 +351,6 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount,
 
         // If we switch between non-cache and cache mode or enable texture
         // coordinates we need to set up the pointers to the vertices' components
-        if (!m_cache.enable || !useVertexCache || !m_cache.useVertexCache)
         {
             const char* data = reinterpret_cast<const char*>(vertices);
 
@@ -792,19 +791,14 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
     if (useVertexCache)
     {
         // Since vertices are transformed, we must use an identity transform to render them
+#ifndef SFML_OPENGL_ES
         if (!m_cache.enable || !m_cache.useVertexCache)
         {
-#ifndef SFML_OPENGL_ES
-
             glCheck(glLoadIdentity());
-
-#else
-
-            usedShader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(Transform::Identity.getMatrix()));
-
-#endif
-
         }
+#else
+        usedShader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(Transform::Identity.getMatrix()));
+#endif
     }
     else
     {
@@ -911,6 +905,14 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         }
 
         usedShader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix));
+        // Defines an uniform that allows shaders to scale its texcoords depending on their size and not on their actual size
+        if (states.texture->m_actualSize.x != 0 && states.texture->m_actualSize.y != 0) {
+            GLfloat factor_npot[2] = {
+                static_cast<GLfloat>(states.texture->m_size.x) / states.texture->m_actualSize.x,
+                static_cast<GLfloat>(states.texture->m_size.y) / states.texture->m_actualSize.y
+            };
+            usedShader->setUniform("factor_npot", Glsl::Vec2 { factor_npot[0], factor_npot[1] });
+        }
     }
 
     applyShader(usedShader);
