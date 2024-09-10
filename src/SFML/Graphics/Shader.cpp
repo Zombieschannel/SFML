@@ -40,7 +40,7 @@
 #include <vector>
 
 
-#if defined(SFML_SYSTEM_MACOS) || defined(SFML_SYSTEM_IOS)
+#if defined(SFML_SYSTEM_MACOS)
 
     #define castToGlHandle(x) reinterpret_cast<GLEXT_GLhandle>(static_cast<ptrdiff_t>(x))
     #define castFromGlHandle(x) static_cast<unsigned int>(reinterpret_cast<ptrdiff_t>(x))
