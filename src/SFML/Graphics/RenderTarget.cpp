@@ -911,7 +911,7 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
                 static_cast<GLfloat>(states.texture->m_size.x) / states.texture->m_actualSize.x,
                 static_cast<GLfloat>(states.texture->m_size.y) / states.texture->m_actualSize.y
             };
-            usedShader->setUniform("factor_npot", Glsl::Vec2 { factor_npot[0], factor_npot[1] });
+            usedShader->setUniform("factor_npot", Glsl::Vec2(factor_npot[0], factor_npot[1]));
         }
     }
 
