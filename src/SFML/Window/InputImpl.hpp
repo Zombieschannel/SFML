@@ -44,6 +44,8 @@
     #include <SFML/Window/iOS/InputImpl.hpp>
 #elif defined(SFML_SYSTEM_ANDROID)
     #include <SFML/Window/Android/InputImpl.hpp>
+#elif defined(SFML_SYSTEM_EMSCRIPTEN)
+    #include <SFML/Window/Emscripten/InputImpl.hpp>
 #endif
 
 #endif // SFML_INPUTIMPL_HPP

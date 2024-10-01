@@ -61,6 +61,11 @@ macro(sfml_add_library target)
         add_library(${target} ${THIS_SOURCES})
     endif()
 
+    if(SFML_OS_EMSCRIPTEN)
+        target_compile_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS})
+        target_link_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS})
+    endif()
+
     set_file_warnings(${THIS_SOURCES})
 
     # define the export symbol of the module
@@ -277,6 +282,13 @@ macro(sfml_add_example target)
     # link the target to its SFML dependencies
     if(THIS_DEPENDS)
         target_link_libraries(${target} PRIVATE ${THIS_DEPENDS})
+    endif()
+
+    # set required compile/link options for emscripten and preload resource files
+    if(SFML_OS_EMSCRIPTEN)
+        target_compile_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS})
+        target_link_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS})
+        set_target_properties(${target} PROPERTIES SUFFIX ".html")
     endif()
 
     if (SFML_OS_IOS)

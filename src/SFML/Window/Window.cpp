@@ -218,6 +218,10 @@ void Window::display()
     if (setActive())
         m_context->display();
 
+#ifdef SFML_SYSTEM_EMSCRIPTEN
+    emscripten_sleep(0); //for use with -sASYNCIFY=1
+#endif
+
     // Limit the framerate if needed
     if (m_frameTimeLimit != Time::Zero)
     {

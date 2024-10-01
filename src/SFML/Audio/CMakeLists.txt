@@ -39,8 +39,6 @@ set(CODECS_SRC
     ${INCROOT}/SoundFileFactory.hpp
     ${INCROOT}/SoundFileFactory.inl
     ${INCROOT}/SoundFileReader.hpp
-    ${SRCROOT}/SoundFileReaderFlac.hpp
-    ${SRCROOT}/SoundFileReaderFlac.cpp
     ${SRCROOT}/SoundFileReaderMp3.hpp
     ${SRCROOT}/SoundFileReaderMp3.cpp
     ${SRCROOT}/SoundFileReaderOgg.hpp
@@ -48,13 +46,20 @@ set(CODECS_SRC
     ${SRCROOT}/SoundFileReaderWav.hpp
     ${SRCROOT}/SoundFileReaderWav.cpp
     ${INCROOT}/SoundFileWriter.hpp
-    ${SRCROOT}/SoundFileWriterFlac.hpp
-    ${SRCROOT}/SoundFileWriterFlac.cpp
     ${SRCROOT}/SoundFileWriterOgg.hpp
     ${SRCROOT}/SoundFileWriterOgg.cpp
     ${SRCROOT}/SoundFileWriterWav.hpp
     ${SRCROOT}/SoundFileWriterWav.cpp
 )
+
+if(NOT SFML_OS_EMSCRIPTEN)
+set(CODECS_SRC "${CODECS_SRC}"
+    ${SRCROOT}/SoundFileWriterFlac.hpp
+    ${SRCROOT}/SoundFileWriterFlac.cpp
+    ${SRCROOT}/SoundFileReaderFlac.hpp
+    ${SRCROOT}/SoundFileReaderFlac.cpp)
+endif()
+
 source_group("codecs" FILES ${CODECS_SRC})
 
 # let CMake know about our additional audio libraries paths (on Windows and OSX)
@@ -67,29 +72,44 @@ elseif(SFML_OS_ANDROID)
     set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} "${PROJECT_SOURCE_DIR}/extlibs/android")
 endif()
 
-# find external libraries
-sfml_find_package(OpenAL INCLUDE "OPENAL_INCLUDE_DIR" LINK "OPENAL_LIBRARY")
-sfml_find_package(VORBIS INCLUDE "VORBIS_INCLUDE_DIRS" LINK "VORBIS_LIBRARIES")
-sfml_find_package(FLAC INCLUDE "FLAC_INCLUDE_DIR" LINK "FLAC_LIBRARY")
+if(NOT SFML_OS_EMSCRIPTEN)
+    # find external libraries
+    sfml_find_package(OpenAL INCLUDE "OPENAL_INCLUDE_DIR" LINK "OPENAL_LIBRARY")
+    sfml_find_package(VORBIS INCLUDE "VORBIS_INCLUDE_DIRS" LINK "VORBIS_LIBRARIES")
+    sfml_find_package(FLAC INCLUDE "FLAC_INCLUDE_DIR" LINK "FLAC_LIBRARY")
+endif()
 
-# avoids warnings in vorbisfile.h
-target_compile_definitions(VORBIS INTERFACE "OV_EXCLUDE_STATIC_CALLBACKS")
-target_compile_definitions(FLAC INTERFACE "FLAC__NO_DLL")
+if(NOT SFML_OS_EMSCRIPTEN)
+    # avoids warnings in vorbisfile.h
+    target_compile_definitions(VORBIS INTERFACE "OV_EXCLUDE_STATIC_CALLBACKS")
+    target_compile_definitions(FLAC INTERFACE "FLAC__NO_DLL")
+endif()
 
 # define the sfml-audio target
 sfml_add_library(sfml-audio
                  SOURCES ${SRC} ${CODECS_SRC})
 
-# setup dependencies
-target_link_libraries(sfml-audio PRIVATE OpenAL)
+if(NOT SFML_OS_EMSCRIPTEN)
+    # setup dependencies
+    target_link_libraries(sfml-audio PRIVATE OpenAL)
+endif()
 
 # minimp3 sources
 target_include_directories(sfml-audio SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/extlibs/headers/minimp3")
+
+if(SFML_OS_EMSCRIPTEN)
+    target_include_directories(sfml-audio SYSTEM PRIVATE "${CMAKE_SOURCE_DIR}/extlibs/headers/AL")
+endif()
 
 if(SFML_OS_ANDROID)
     target_link_libraries(sfml-audio PRIVATE android OpenSLES)
 endif()
 
-target_link_libraries(sfml-audio
-                      PUBLIC sfml-system
-                      PRIVATE VORBIS FLAC)
+if(SFML_OS_EMSCRIPTEN)
+    target_link_libraries(sfml-audio
+                         PUBLIC sfml-system)
+else()
+    target_link_libraries(sfml-audio
+                          PUBLIC sfml-system
+                          PRIVATE VORBIS FLAC)
+endif()

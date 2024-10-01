@@ -81,6 +81,13 @@
 
     #define SFML_VULKAN_IMPLEMENTATION_NOT_AVAILABLE
 
+#elif defined(SFML_SYSTEM_EMSCRIPTEN)
+
+    #include <SFML/Window/Emscripten/WindowImplEmscripten.hpp>
+    typedef sf::priv::WindowImplEmscripten WindowImplType;
+
+    #define SFML_VULKAN_IMPLEMENTATION_NOT_AVAILABLE
+
 #endif
 
 

@@ -39,12 +39,16 @@
     #include <X11/Xlib.h>
 #endif
 
+#ifndef SFML_SYSTEM_EMSCRIPTEN
+
 // We check for this definition in order to avoid multiple definitions of GLAD
 // entities during unity builds of SFML.
 #ifndef SF_GLAD_EGL_IMPLEMENTATION_INCLUDED
 #define SF_GLAD_EGL_IMPLEMENTATION_INCLUDED
 #define SF_GLAD_EGL_IMPLEMENTATION
 #include <glad/egl.h>
+#endif
+
 #endif
 
 namespace
@@ -79,6 +83,9 @@ namespace
         ////////////////////////////////////////////////////////////
         void ensureInit()
         {
+
+#ifndef SFML_SYSTEM_EMSCRIPTEN
+
             static bool initialized = false;
             if (!initialized)
             {
@@ -91,6 +98,9 @@ namespace
                 // Continue loading with a display
                 gladLoaderLoadEGL(getInitializedDisplay());
             }
+
+#endif
+
         }
     }
 }
@@ -113,8 +123,10 @@ m_config  (NULL)
     m_display = EglContextImpl::getInitializedDisplay();
 
     // Get the best EGL config matching the default video settings
-    m_config = getBestConfig(m_display, VideoMode::getDesktopMode().bitsPerPixel, ContextSettings());
+    m_config = getBestConfig(m_display, VideoMode::getDesktopMode().bitsPerPixel, ContextSettings(24, 8)); // currently hardcoded ContextSettings(24, 8) since otherwise you cannot create windows with depth/stencil buffers
     updateSettings();
+
+#ifndef SFML_SYSTEM_EMSCRIPTEN
 
     // Note: The EGL specs say that attrib_list can be NULL when passed to eglCreatePbufferSurface,
     // but this is resulting in a segfault. Bug in Android?
@@ -126,8 +138,16 @@ m_config  (NULL)
 
     eglCheck(m_surface = eglCreatePbufferSurface(m_display, m_config, attrib_list));
 
+#else
+
+    EGLNativeWindowType dummyWindow;
+    createSurface(dummyWindow);
+
+#endif
+
     // Create EGL context
     createContext(shared);
+
 }
 
 
@@ -198,11 +218,13 @@ EglContext::~EglContext()
         eglCheck(eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
     }
 
+#ifndef SFML_SYSTEM_EMSCRIPTEN
     // Destroy context
     if (m_context != EGL_NO_CONTEXT)
     {
         eglCheck(eglDestroyContext(m_display, m_context));
     }
+#endif
 
     // Destroy surface
     if (m_surface != EGL_NO_SURFACE)
@@ -253,7 +275,9 @@ void EglContext::display()
 ////////////////////////////////////////////////////////////
 void EglContext::setVerticalSyncEnabled(bool enabled)
 {
+#ifndef SFML_SYSTEM_EMSCRIPTEN
     eglCheck(eglSwapInterval(m_display, enabled ? 1 : 0));
+#endif
 }
 
 

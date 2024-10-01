@@ -91,6 +91,11 @@
     #include <SFML/Window/EglContext.hpp>
     typedef sf::priv::EglContext ContextType;
 
+#elif defined(SFML_SYSTEM_EMSCRIPTEN)
+
+    #include <SFML/Window/EglContext.hpp>
+    typedef sf::priv::EglContext ContextType;
+
 #endif
 
 #if defined(SFML_SYSTEM_WINDOWS)

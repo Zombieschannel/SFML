@@ -33,7 +33,13 @@
 #include <SFML/Window/EGLCheck.hpp>
 #include <SFML/Window/GlContext.hpp>
 #include <SFML/Window/WindowStyle.hpp> // Prevent conflict with macro None from Xlib
+// Emscripten does not use GLAD
+#ifdef SFML_SYSTEM_EMSCRIPTEN
+#define KHRONOS_APIENTRY
+#include <EGL/egl.h>
+#else
 #include <glad/egl.h>
+#endif
 #if defined(SFML_SYSTEM_LINUX) && !defined(SFML_USE_DRM)
     #include <X11/Xlib.h>
     #include <X11/Xutil.h>

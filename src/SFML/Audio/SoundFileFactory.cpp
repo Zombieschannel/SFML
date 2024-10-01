@@ -26,8 +26,10 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/SoundFileFactory.hpp>
+#ifndef SFML_SYSTEM_EMSCRIPTEN
 #include <SFML/Audio/SoundFileReaderFlac.hpp>
 #include <SFML/Audio/SoundFileWriterFlac.hpp>
+#endif
 #include <SFML/Audio/SoundFileReaderMp3.hpp>
 #include <SFML/Audio/SoundFileReaderOgg.hpp>
 #include <SFML/Audio/SoundFileWriterOgg.hpp>
@@ -46,8 +48,10 @@ namespace
         static bool registered = false;
         if (!registered)
         {
+#ifndef SFML_SYSTEM_EMSCRIPTEN
             sf::SoundFileFactory::registerReader<sf::priv::SoundFileReaderFlac>();
             sf::SoundFileFactory::registerWriter<sf::priv::SoundFileWriterFlac>();
+#endif
             sf::SoundFileFactory::registerReader<sf::priv::SoundFileReaderMp3>();
             sf::SoundFileFactory::registerReader<sf::priv::SoundFileReaderOgg>();
             sf::SoundFileFactory::registerWriter<sf::priv::SoundFileWriterOgg>();
