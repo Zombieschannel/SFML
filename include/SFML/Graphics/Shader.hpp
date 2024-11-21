@@ -691,6 +691,10 @@ public:
     ////////////////////////////////////////////////////////////
     static bool isGeometryAvailable();
 
+    static const Shader& getDefaultShader();
+
+    static const Shader& getDefaultTexShader();
+
 private:
 
     ////////////////////////////////////////////////////////////

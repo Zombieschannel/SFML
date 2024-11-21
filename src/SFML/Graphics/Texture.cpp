@@ -171,7 +171,7 @@ bool Texture::create(unsigned int width, unsigned int height)
     // Make sure that the current texture binding will be preserved
     priv::TextureSaver save;
 
-    static bool textureEdgeClamp = GLEXT_texture_edge_clamp || GLEXT_GL_VERSION_1_2 || Context::isExtensionAvailable("GL_EXT_texture_edge_clamp");
+    static bool textureEdgeClamp = GLEXT_texture_edge_clamp || SF_GLAD_GL_VERSION_1_2 || Context::isExtensionAvailable("GL_EXT_texture_edge_clamp");
 
     if (!m_isRepeated && !textureEdgeClamp)
     {
@@ -772,6 +772,8 @@ void Texture::bind(const Texture* texture, CoordinateType coordinateType)
         // Bind the texture
         glCheck(glBindTexture(GL_TEXTURE_2D, texture->m_texture));
 
+#ifndef SFML_OPENGL_ES
+
         // Check if we need to define a special texture matrix
         if ((coordinateType == Pixels) || texture->m_pixelsFlipped)
         {
@@ -795,18 +797,29 @@ void Texture::bind(const Texture* texture, CoordinateType coordinateType)
                 matrix[13] = static_cast<float>(texture->m_size.y) / static_cast<float>(texture->m_actualSize.y);
             }
 
+
             // Load the matrix
             glCheck(glMatrixMode(GL_TEXTURE));
             glCheck(glLoadMatrixf(matrix));
 
             // Go back to model-view mode (sf::RenderTarget relies on it)
             glCheck(glMatrixMode(GL_MODELVIEW));
+
         }
+
+#else
+
+        (void)coordinateType;
+
+#endif
+
     }
     else
     {
         // Bind no texture
         glCheck(glBindTexture(GL_TEXTURE_2D, 0));
+
+#ifndef SFML_OPENGL_ES
 
         // Reset the texture matrix
         glCheck(glMatrixMode(GL_TEXTURE));
@@ -814,6 +827,9 @@ void Texture::bind(const Texture* texture, CoordinateType coordinateType)
 
         // Go back to model-view mode (sf::RenderTarget relies on it)
         glCheck(glMatrixMode(GL_MODELVIEW));
+
+#endif
+
     }
 }
 
