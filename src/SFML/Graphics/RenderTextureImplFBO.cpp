@@ -155,8 +155,6 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
 
         m_sRgb = settings.sRgbCapable && GL_EXT_texture_sRGB;
 
-#ifndef SFML_OPENGL_ES
-
         // Check if the requested anti-aliasing level is supported
         if (settings.antiAliasingLevel)
         {
@@ -171,19 +169,11 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
             }
         }
 
-#endif
-
         if (!settings.antiAliasingLevel)
         {
             // Create the depth/stencil buffer if requested
             if (settings.stencilBits && settings.depthBits)
             {
-                if (!GLEXT_packed_depth_stencil)
-                {
-                    err() << "Impossible to create render texture (combined depth/stencil buffer not supported)"
-                          << std::endl;
-                    return false;
-                }
 
                 GLuint depthStencil = 0;
                 glCheck(GLEXT_glGenRenderbuffers(1, &depthStencil));
@@ -246,8 +236,6 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
         }
         else
         {
-
-#ifndef SFML_OPENGL_ES
 
             // Create the multisample color buffer
             GLuint color = 0;
@@ -336,14 +324,6 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
 
             m_multisample = true;
 
-#else
-
-            m_multisample = false;
-
-            err() << "Impossible to create render texture (failed to create the multisample render buffers)" << std::endl;
-            return false;
-
-#endif // SFML_OPENGL_ES
         }
     }
 
@@ -443,8 +423,6 @@ bool RenderTextureImplFBO::createFrameBuffer()
     // Register the object with the current context so it is automatically destroyed
     registerUnsharedGlObject(std::move(frameBuffer));
 
-#ifndef SFML_OPENGL_ES
-
     if (m_multisample)
     {
         // Create the multisample framebuffer object
@@ -499,8 +477,6 @@ bool RenderTextureImplFBO::createFrameBuffer()
         // Register the object with the current context so it is automatically destroyed
         registerUnsharedGlObject(std::move(multisampleFrameBuffer));
     }
-
-#endif
 
     return true;
 }

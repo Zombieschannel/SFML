@@ -205,9 +205,13 @@ void RenderTarget::clear(Color color)
         // Unbind texture to fix RenderTexture preventing clear
         applyTexture(nullptr);
 
+#ifndef SFML_OPENGL_ES
+
         // Apply the view (scissor testing can affect clearing)
         if (!m_cache.enable || m_cache.viewChanged)
             applyCurrentView();
+
+#endif
 
         glCheck(glClearColor(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
         glCheck(glClear(GL_COLOR_BUFFER_BIT));
@@ -223,9 +227,13 @@ void RenderTarget::clearStencil(StencilValue stencilValue)
         // Unbind texture to fix RenderTexture preventing clear
         applyTexture(nullptr);
 
+#ifndef SFML_OPENGL_ES
+
         // Apply the view (scissor testing can affect clearing)
         if (!m_cache.enable || m_cache.viewChanged)
             applyCurrentView();
+
+#endif
 
         glCheck(glClearStencil(static_cast<int>(stencilValue.value)));
         glCheck(glClear(GL_STENCIL_BUFFER_BIT));
@@ -241,9 +249,13 @@ void RenderTarget::clear(Color color, StencilValue stencilValue)
         // Unbind texture to fix RenderTexture preventing clear
         applyTexture(nullptr);
 
+#ifndef SFML_OPENGL_ES
+
         // Apply the view (scissor testing can affect clearing)
         if (!m_cache.enable || m_cache.viewChanged)
             applyCurrentView();
+
+#endif
 
         glCheck(glClearColor(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
         glCheck(glClearStencil(static_cast<int>(stencilValue.value)));
@@ -371,6 +383,8 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount, Primiti
 
         setupDraw(useVertexCache, states);
 
+#ifndef SFML_OPENGL_ES
+
         // Check if texture coordinates array is needed, and update client state accordingly
         const bool enableTexCoordsArray = (states.texture || states.shader);
         if (!m_cache.enable || (enableTexCoordsArray != m_cache.texCoordsArrayEnabled))
@@ -403,6 +417,31 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount, Primiti
 
             glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), data + 12));
         }
+
+#else
+
+        // Check if texture coordinates array is needed, and update client state accordingly
+        bool enableTexCoordsArray = (states.texture || states.shader);
+
+        // If we switch between non-cache and cache mode or enable texture
+        // coordinates we need to set up the pointers to the vertices' components
+        {
+            const auto* data = reinterpret_cast<const std::byte*>(vertices);
+
+            // If we pre-transform the vertices, we must use our internal vertex cache
+            if (useVertexCache)
+                data = reinterpret_cast<const std::byte*>(m_cache.vertexCache.data());
+
+            if (m_cache.posAttrib >= 0)
+                glCheck(glVertexAttribPointer(m_cache.posAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 0));
+            if (m_cache.colAttrib >= 0)
+                glCheck(glVertexAttribPointer(m_cache.colAttrib, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), data + 8));
+            if (enableTexCoordsArray)
+                if (m_cache.texAttrib >= 0)
+                    glCheck(glVertexAttribPointer(m_cache.texAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), data + 12));
+        }
+
+#endif
 
         drawPrimitives(type, 0, vertexCount);
         cleanupDraw(states);
@@ -449,6 +488,8 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
         // Bind vertex buffer
         VertexBuffer::bind(&vertexBuffer);
 
+#ifndef SFML_OPENGL_ES
+
         // Always enable texture coordinates
         if (!m_cache.enable || !m_cache.texCoordsArrayEnabled)
             glCheck(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
@@ -456,6 +497,21 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
         glCheck(glVertexPointer(2, GL_FLOAT, sizeof(Vertex), reinterpret_cast<const void*>(0)));
         glCheck(glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), reinterpret_cast<const void*>(8)));
         glCheck(glTexCoordPointer(2, GL_FLOAT, sizeof(Vertex), reinterpret_cast<const void*>(12)));
+
+#else
+
+        if (!m_cache.enable || !m_cache.texCoordsArrayEnabled)
+            if (m_cache.texAttrib >= 0)
+                glCheck(glEnableVertexAttribArray(m_cache.texAttrib));
+
+        if (m_cache.posAttrib >= 0)
+            glCheck(glVertexAttribPointer(m_cache.posAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(0)));
+        if (m_cache.colAttrib >= 0)
+            glCheck(glVertexAttribPointer(m_cache.colAttrib, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), reinterpret_cast<const void*>(8)));
+        if (m_cache.texAttrib >= 0)
+            glCheck(glVertexAttribPointer(m_cache.texAttrib, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const void*>(12)));
+
+#endif
 
         drawPrimitives(vertexBuffer.getPrimitiveType(), firstVertex, vertexCount);
 
@@ -534,16 +590,16 @@ void RenderTarget::pushGLStates()
         }
 #endif
 
-#ifndef SFML_OPENGL_ES
-        glCheck(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
-        glCheck(glPushAttrib(GL_ALL_ATTRIB_BITS));
-#endif
-        glCheck(glMatrixMode(GL_MODELVIEW));
-        glCheck(glPushMatrix());
-        glCheck(glMatrixMode(GL_PROJECTION));
-        glCheck(glPushMatrix());
-        glCheck(glMatrixMode(GL_TEXTURE));
-        glCheck(glPushMatrix());
+        #ifndef SFML_OPENGL_ES
+            glCheck(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
+            glCheck(glPushAttrib(GL_ALL_ATTRIB_BITS));
+            glCheck(glMatrixMode(GL_MODELVIEW));
+            glCheck(glPushMatrix());
+            glCheck(glMatrixMode(GL_PROJECTION));
+            glCheck(glPushMatrix());
+            glCheck(glMatrixMode(GL_TEXTURE));
+            glCheck(glPushMatrix());
+        #endif
     }
 
     resetGLStates();
@@ -555,16 +611,16 @@ void RenderTarget::popGLStates()
 {
     if (RenderTargetImpl::isActive(m_id) || setActive(true))
     {
-        glCheck(glMatrixMode(GL_PROJECTION));
-        glCheck(glPopMatrix());
-        glCheck(glMatrixMode(GL_MODELVIEW));
-        glCheck(glPopMatrix());
-        glCheck(glMatrixMode(GL_TEXTURE));
-        glCheck(glPopMatrix());
-#ifndef SFML_OPENGL_ES
-        glCheck(glPopClientAttrib());
-        glCheck(glPopAttrib());
-#endif
+        #ifndef SFML_OPENGL_ES
+            glCheck(glMatrixMode(GL_PROJECTION));
+            glCheck(glPopMatrix());
+            glCheck(glMatrixMode(GL_MODELVIEW));
+            glCheck(glPopMatrix());
+            glCheck(glMatrixMode(GL_TEXTURE));
+            glCheck(glPopMatrix());
+            glCheck(glPopClientAttrib());
+            glCheck(glPopAttrib());
+        #endif
     }
 }
 
@@ -591,21 +647,28 @@ void RenderTarget::resetGLStates()
         priv::ensureExtensionsInit();
 
         // Make sure that the texture unit which is active is the number 0
+#ifndef SFML_OPENGL_ES
         if (GLEXT_multitexture)
         {
             glCheck(GLEXT_glClientActiveTexture(GLEXT_GL_TEXTURE0));
             glCheck(GLEXT_glActiveTexture(GLEXT_GL_TEXTURE0));
         }
+#else
+        if (GLEXT_multitexture)
+        {
+            glCheck(GLEXT_glActiveTexture(GLEXT_GL_TEXTURE0));
+        }
+#endif
 
         // Define the default OpenGL states
         glCheck(glDisable(GL_CULL_FACE));
-        glCheck(glDisable(GL_LIGHTING));
-        glCheck(glDisable(GL_STENCIL_TEST));
         glCheck(glDisable(GL_DEPTH_TEST));
-        glCheck(glDisable(GL_ALPHA_TEST));
-        glCheck(glDisable(GL_SCISSOR_TEST));
-        glCheck(glEnable(GL_TEXTURE_2D));
         glCheck(glEnable(GL_BLEND));
+
+#ifndef SFML_OPENGL_ES
+        glCheck(glDisable(GL_ALPHA_TEST));
+        glCheck(glDisable(GL_LIGHTING));
+        glCheck(glEnable(GL_TEXTURE_2D));
         glCheck(glMatrixMode(GL_MODELVIEW));
         glCheck(glLoadIdentity());
         glCheck(glEnableClientState(GL_VERTEX_ARRAY));
@@ -615,6 +678,16 @@ void RenderTarget::resetGLStates()
         m_cache.scissorEnabled = false;
         m_cache.stencilEnabled = false;
         m_cache.glStatesSet    = true;
+#else
+        if (m_cache.posAttrib >= 0)
+            glCheck(glDisableVertexAttribArray(m_cache.posAttrib));
+        if (m_cache.colAttrib >= 0)
+            glCheck(glDisableVertexAttribArray(m_cache.colAttrib));
+        if (m_cache.texAttrib >= 0)
+            glCheck(glDisableVertexAttribArray(m_cache.texAttrib));
+#endif
+
+        m_cache.glStatesSet = true;
 
         // Apply the default SFML states
         applyBlendMode(BlendAlpha);
@@ -835,20 +908,64 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
     if (!m_cache.glStatesSet)
         resetGLStates();
 
+#ifdef SFML_OPENGL_ES
+
+    Shader* usedShader = const_cast<Shader*>(states.shader);
+
+    if (!states.shader && !states.texture)
+        usedShader = const_cast<Shader*>(&Shader::getDefaultShader());
+    else if (!states.shader && states.texture)
+        usedShader = const_cast<Shader*>(&Shader::getDefaultTexShader());
+
+#endif
+
+
     if (useVertexCache)
     {
         // Since vertices are transformed, we must use an identity transform to render them
+#ifndef SFML_OPENGL_ES
         if (!m_cache.enable || !m_cache.useVertexCache)
+        {
             glCheck(glLoadIdentity());
+        }
+#else
+        usedShader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(Transform::Identity.getMatrix()));
+#endif
     }
     else
     {
+#ifndef SFML_OPENGL_ES
+
         applyTransform(states.transform);
+
+#else
+
+        usedShader->setUniform("sf_modelview", static_cast<Glsl::Mat4>(states.transform.getMatrix()));
+
+#endif
     }
+
+#ifndef SFML_OPENGL_ES
 
     // Apply the view
     if (!m_cache.enable || m_cache.viewChanged)
         applyCurrentView();
+
+#else
+
+    // Set the viewport
+    IntRect viewport = getViewport(m_view);
+    int top = static_cast<int>(getSize().y) - (viewport.position.y + viewport.size.y);
+    glCheck(glViewport(viewport.position.x, top, viewport.size.x, viewport.size.y));
+
+    {
+        // Set the projection matrix
+        usedShader->setUniform("sf_projection", static_cast<Glsl::Mat4>(m_view.getTransform().getMatrix()));
+    }
+
+#endif
+
+
 
     // Apply the blend mode
     if (!m_cache.enable || (states.blendMode != m_cache.lastBlendMode))
@@ -861,6 +978,11 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
     // Mask the color buffer off if necessary
     if (states.stencilMode.stencilOnly)
         glCheck(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
+#ifdef SFML_OPENGL_ES
+
+    bool setTexture = false;
+
+#endif
 
     // Apply the texture
     if (!m_cache.enable || (states.texture && states.texture->m_fboAttachment))
@@ -872,17 +994,85 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         // RenderTextureImplFBO which can be quite costly
         // See: https://www.khronos.org/opengl/wiki/Memory_Model
         applyTexture(states.texture, states.coordinateType);
+
+#ifdef SFML_OPENGL_ES
+
+        if (states.texture)
+            setTexture = true;
+
+#endif
     }
     else
     {
         const std::uint64_t textureId = states.texture ? states.texture->m_cacheId : 0;
         if (textureId != m_cache.lastTextureId || states.coordinateType != m_cache.lastCoordinateType)
+        {
             applyTexture(states.texture, states.coordinateType);
+#ifdef SFML_OPENGL_ES
+
+            if (states.texture)
+                setTexture = true;
+
+#endif
+        }
     }
+
+#ifdef SFML_OPENGL_ES
+
+    if (setTexture)
+    {
+        GLfloat matrix[16] = { 1.f, 0.f, 0.f, 0.f,
+                                  0.f, 1.f, 0.f, 0.f,
+                                  0.f, 0.f, 1.f, 0.f,
+                                  0.f, 0.f, 0.f, 1.f };
+
+        // If non-normalized coordinates (= pixels) are requested, we need to
+        // setup scale factors that convert the range [0 .. size] to [0 .. 1]
+        matrix[0] = 1.f / static_cast<float>(states.texture->m_actualSize.x);
+        matrix[5] = 1.f / static_cast<float>(states.texture->m_actualSize.y);
+
+        // If pixels are flipped we must invert the Y axis
+        if (states.texture->m_pixelsFlipped)
+        {
+            matrix[5] = -matrix[5];
+            matrix[13] = static_cast<float>(states.texture->m_size.y) / static_cast<float>(states.texture->m_actualSize.y);
+        }
+
+        usedShader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix));
+        // Defines an uniform that allows shaders to scale its texcoords depending on their size and not on their actual size
+        if (states.texture->m_actualSize.x != 0 && states.texture->m_actualSize.y != 0) {
+            GLfloat factor_npot[2] = {
+                static_cast<GLfloat>(states.texture->m_size.x) / states.texture->m_actualSize.x,
+                static_cast<GLfloat>(states.texture->m_size.y) / states.texture->m_actualSize.y
+            };
+            usedShader->setUniform("factor_npot", Glsl::Vec2(factor_npot[0], factor_npot[1]));
+        }
+    }
+
+    applyShader(usedShader);
+
+    if (m_cache.programChanged != usedShader->getNativeHandle())
+    {
+        m_cache.programChanged = usedShader->getNativeHandle();
+        m_cache.posAttrib = glGetAttribLocation(usedShader->getNativeHandle(), "position");
+        m_cache.colAttrib = glGetAttribLocation(usedShader->getNativeHandle(), "color");
+        m_cache.texAttrib = glGetAttribLocation(usedShader->getNativeHandle(), "texCoord");
+        if (m_cache.posAttrib >= 0)
+            glCheck(glEnableVertexAttribArray(m_cache.posAttrib));
+        if (m_cache.colAttrib >= 0)
+            glCheck(glEnableVertexAttribArray(m_cache.colAttrib));
+        if (m_cache.texAttrib >= 0)
+            glCheck(glEnableVertexAttribArray(m_cache.texAttrib));
+    }
+
+#else
 
     // Apply the shader
     if (states.shader)
         applyShader(states.shader);
+
+#endif
+
 }
 
 
@@ -902,9 +1092,17 @@ void RenderTarget::drawPrimitives(PrimitiveType type, std::size_t firstVertex, s
 ////////////////////////////////////////////////////////////
 void RenderTarget::cleanupDraw(const RenderStates& states)
 {
+#ifdef SFML_OPENGL_ES
+
+    applyShader(NULL);
+
+#else
+
     // Unbind the shader, if any
     if (states.shader)
         applyShader(nullptr);
+
+#endif
 
     // If the texture we used to draw belonged to a RenderTexture, then forcibly unbind that texture.
     // This prevents a bug where some drivers do not clear RenderTextures properly.

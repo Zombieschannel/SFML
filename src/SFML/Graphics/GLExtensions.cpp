@@ -95,7 +95,7 @@ void ensureExtensionsInit()
         initialized = true;
 
 #ifdef SFML_OPENGL_ES
-        gladLoadGLES1(Context::getFunction);
+        gladLoadGLES2(sf::Context::getFunction);
 #else
         gladLoadGL(Context::getFunction);
 #endif

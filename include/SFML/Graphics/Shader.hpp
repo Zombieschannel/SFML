@@ -844,6 +844,10 @@ public:
     ////////////////////////////////////////////////////////////
     [[nodiscard]] static bool isGeometryAvailable();
 
+    static const Shader& getDefaultShader();
+
+    static const Shader& getDefaultTexShader();
+
 private:
     ////////////////////////////////////////////////////////////
     /// \brief Compile the shader(s) and create the program
