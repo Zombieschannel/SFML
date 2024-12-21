@@ -559,6 +559,11 @@ private:
         bool                  texCoordsArrayEnabled{}; //!< Is `GL_TEXTURE_COORD_ARRAY` client state enabled?
         bool                  useVertexCache{};        //!< Did we previously use the vertex cache?
         std::array<Vertex, 4> vertexCache{};           //!< Pre-transformed vertices cache
+        std::uint32_t         programChanged{};
+        std::int32_t          posAttrib{};
+        std::int32_t          colAttrib{};
+        std::int32_t          texAttrib{};
+        enum {VertexCacheSize = 4};
     };
 
     ////////////////////////////////////////////////////////////
