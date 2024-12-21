@@ -49,9 +49,7 @@
 
 #include <cstdint>
 
-#ifndef SFML_OPENGL_ES
-
-#if defined(SFML_SYSTEM_MACOS) || defined(SFML_SYSTEM_IOS)
+#if defined(SFML_SYSTEM_MACOS)
 
 #define castToGlHandle(x)   reinterpret_cast<GLEXT_GLhandle>(std::ptrdiff_t{x})
 #define castFromGlHandle(x) static_cast<unsigned int>(reinterpret_cast<std::ptrdiff_t>(x))
@@ -180,15 +178,22 @@ struct Shader::UniformBinder
     /// \brief Constructor: set up state before uniform is set
     ///
     ////////////////////////////////////////////////////////////
-    UniformBinder(Shader& shader, const std::string& name) : currentProgram(castToGlHandle(shader.m_shaderProgram))
+    UniformBinder(Shader& shader, const std::string& name) :
+        savedProgram(0),
+        currentProgram(castToGlHandle(shader.m_shaderProgram)),
+        location(-1)
     {
         if (currentProgram)
         {
+
             // Enable program object
-            savedProgram = glCheck(GLEXT_glGetHandle(GLEXT_GL_PROGRAM_OBJECT));
+#ifndef SFML_OPENGL_ES
+            glCheck(savedProgram = GLEXT_glGetHandle(GLEXT_GL_PROGRAM_OBJECT));
+#else
+            glCheck(glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint*>(&savedProgram)));
+#endif
             if (currentProgram != savedProgram)
                 glCheck(GLEXT_glUseProgramObject(currentProgram));
-
             // Store uniform location for further use outside constructor
             location = shader.getUniformLocation(name);
         }
@@ -228,7 +233,7 @@ struct Shader::UniformBinder
 Shader::Shader(const std::filesystem::path& filename, Type type)
 {
     if (!loadFromFile(filename, type))
-        throw Exception("Failed to load shader from file");
+        throw sf::Exception("Failed to load shader from file");
 }
 
 
@@ -236,7 +241,7 @@ Shader::Shader(const std::filesystem::path& filename, Type type)
 Shader::Shader(const std::filesystem::path& vertexShaderFilename, const std::filesystem::path& fragmentShaderFilename)
 {
     if (!loadFromFile(vertexShaderFilename, fragmentShaderFilename))
-        throw Exception("Failed to load shader from files");
+        throw sf::Exception("Failed to load shader from files");
 }
 
 
@@ -246,7 +251,7 @@ Shader::Shader(const std::filesystem::path& vertexShaderFilename,
                const std::filesystem::path& fragmentShaderFilename)
 {
     if (!loadFromFile(vertexShaderFilename, geometryShaderFilename, fragmentShaderFilename))
-        throw Exception("Failed to load shader from files");
+        throw sf::Exception("Failed to load shader from files");
 }
 
 
@@ -254,7 +259,7 @@ Shader::Shader(const std::filesystem::path& vertexShaderFilename,
 Shader::Shader(std::string_view shader, Type type)
 {
     if (!loadFromMemory(shader, type))
-        throw Exception("Failed to load shader from memory");
+        throw sf::Exception("Failed to load shader from memory");
 }
 
 
@@ -262,7 +267,7 @@ Shader::Shader(std::string_view shader, Type type)
 Shader::Shader(std::string_view vertexShader, std::string_view fragmentShader)
 {
     if (!loadFromMemory(vertexShader, fragmentShader))
-        throw Exception("Failed to load shader from memory");
+        throw sf::Exception("Failed to load shader from memory");
 }
 
 
@@ -270,7 +275,7 @@ Shader::Shader(std::string_view vertexShader, std::string_view fragmentShader)
 Shader::Shader(std::string_view vertexShader, std::string_view geometryShader, std::string_view fragmentShader)
 {
     if (!loadFromMemory(vertexShader, geometryShader, fragmentShader))
-        throw Exception("Failed to load shader from memory");
+        throw sf::Exception("Failed to load shader from memory");
 }
 
 
@@ -278,7 +283,7 @@ Shader::Shader(std::string_view vertexShader, std::string_view geometryShader, s
 Shader::Shader(InputStream& stream, Type type)
 {
     if (!loadFromStream(stream, type))
-        throw Exception("Failed to load shader from stream");
+        throw sf::Exception("Failed to load shader from stream");
 }
 
 
@@ -286,7 +291,7 @@ Shader::Shader(InputStream& stream, Type type)
 Shader::Shader(InputStream& vertexShaderStream, InputStream& fragmentShaderStream)
 {
     if (!loadFromStream(vertexShaderStream, fragmentShaderStream))
-        throw Exception("Failed to load shader from streams");
+        throw sf::Exception("Failed to load shader from streams");
 }
 
 
@@ -294,7 +299,7 @@ Shader::Shader(InputStream& vertexShaderStream, InputStream& fragmentShaderStrea
 Shader::Shader(InputStream& vertexShaderStream, InputStream& geometryShaderStream, InputStream& fragmentShaderStream)
 {
     if (!loadFromStream(vertexShaderStream, geometryShaderStream, fragmentShaderStream))
-        throw Exception("Failed to load shader from streams");
+        throw sf::Exception("Failed to load shader from streams");
 }
 
 
@@ -305,7 +310,7 @@ Shader::~Shader()
 
     // Destroy effect program
     if (m_shaderProgram)
-        glCheck(GLEXT_glDeleteObject(castToGlHandle(m_shaderProgram)));
+        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
 }
 
 ////////////////////////////////////////////////////////////
@@ -330,7 +335,7 @@ Shader& Shader::operator=(Shader&& right) noexcept
     {
         // Destroy effect program
         const TransientContextLock lock;
-        glCheck(GLEXT_glDeleteObject(castToGlHandle(m_shaderProgram)));
+        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
     }
 
     // Move the contents of right.
@@ -818,8 +823,13 @@ bool Shader::isAvailable()
         // Make sure that extensions are initialized
         priv::ensureExtensionsInit();
 
+#ifdef SFML_OPENGL_ES
+        return true;
+#else
         return GLEXT_multitexture && GLEXT_shading_language_100 && GLEXT_shader_objects && GLEXT_vertex_shader &&
                GLEXT_fragment_shader;
+#endif
+
     }();
 
     return available;
@@ -836,10 +846,134 @@ bool Shader::isGeometryAvailable()
         // Make sure that extensions are initialized
         priv::ensureExtensionsInit();
 
+#ifdef SFML_OPENGL_ES
+        return false;
+#else
         return isAvailable() && (GLEXT_geometry_shader4 || GLEXT_GL_VERSION_3_2);
+#endif
+
     }();
 
     return available;
+}
+
+////////////////////////////////////////////////////////////
+const Shader& Shader::getDefaultShader()
+{
+    static Shader instance;
+    static bool first = true;
+
+    if (first)
+    {
+#ifdef SFML_OPENGL_ES
+        static_cast<void>(instance.loadFromMemory(
+            "#version 100\n"
+            "attribute vec2 position;"
+            "attribute vec4 color;"
+            "varying vec4 sf_color;"
+            "uniform mat4 sf_modelview;"
+            "uniform mat4 sf_projection;"
+            "void main()"
+            "{"
+            "    vec2 pos = position;"
+            "    sf_color = color;"
+            "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
+            "}",
+
+            "#version 100\n"
+            "precision mediump float;"
+            "varying vec4 sf_color;"
+            "void main()"
+            "{"
+            "    gl_FragColor = sf_color;"
+            "}"
+        ));
+#else
+        static_cast<void>(instance.loadFromMemory(
+            "#version 120\n"
+            "void main()"
+            "{"
+            "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
+            "    gl_FrontColor = gl_Color;"
+            "}",
+
+            "#version 120\n"
+            "void main()"
+            "{"
+            "    gl_FragColor = gl_Color;"
+            "}"
+        ));
+#endif
+        first = false;
+    }
+
+    return instance;
+}
+
+
+////////////////////////////////////////////////////////////
+const Shader& Shader::getDefaultTexShader()
+{
+    static Shader instance;
+    static bool first = true;
+
+    if (first)
+    {
+#ifdef SFML_OPENGL_ES
+        static_cast<void>(instance.loadFromMemory(
+            "#version 100\n"
+            "attribute vec2 position;"
+            "attribute vec4 color;"
+            "attribute vec2 texCoord;"
+            "varying vec4 sf_color;"
+            "varying vec2 sf_texCoord;"
+            "uniform mat4 sf_modelview;"
+            "uniform mat4 sf_projection;"
+            "void main()"
+            "{"
+            "    vec2 pos = position;"
+            "    sf_color = color;"
+            "    sf_texCoord = texCoord;"
+            "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
+            "}",
+
+            "#version 100\n"
+            "precision mediump float;"
+            "varying vec4 sf_color;"
+            "varying vec2 sf_texCoord;"
+            "uniform sampler2D sf_sampler;"
+            "uniform mat4 sf_texture;"
+            "uniform vec2 factor_npot;"
+            "void main()"
+            "{"
+            "    vec4 coord = sf_texture * vec4(sf_texCoord, 0.0, 1.0);"
+            "    coord.xy = mod(coord.xy, factor_npot.xy);"
+            "    gl_FragColor = texture2D(sf_sampler, coord.xy) * sf_color;"
+            "}"
+        ));
+#else
+        static_cast<void>(instance.loadFromMemory(
+            "#version 120\n"
+            "void main()"
+            "{"
+            "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
+            "    gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;"
+            "    gl_FrontColor = gl_Color;"
+            "}",
+
+            "#version 120\n"
+            "uniform sampler2D texture;"
+            "void main()"
+            "{"
+            "    vec4 pixel = texture2D(texture, gl_TexCoord[0].xy);"
+            "    gl_FragColor = gl_Color * pixel;"
+            "}"
+        ));
+#endif
+        first = false;
+    }
+
+    return instance;
 }
 
 
@@ -864,6 +998,18 @@ bool Shader::compile(std::string_view vertexShaderCode, std::string_view geometr
         return false;
     }
 
+    // Destroy the shader if it was already created
+    if (m_shaderProgram)
+    {
+        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
+        m_shaderProgram = 0;
+    }
+
+    // Reset the internal state
+    m_currentTexture = -1;
+    m_textures.clear();
+    m_uniforms.clear();
+
     // Create the program
     const GLEXT_GLhandle shaderProgram = glCheck(GLEXT_glCreateProgramObject());
 
@@ -880,20 +1026,20 @@ bool Shader::compile(std::string_view vertexShaderCode, std::string_view geometr
 
         // Check the compile log
         GLint success = 0;
-        glCheck(GLEXT_glGetObjectParameteriv(shader, GLEXT_GL_OBJECT_COMPILE_STATUS, &success));
+        glCheck(GLEXT_glGetShaderParameteriv(shader, GLEXT_GL_OBJECT_COMPILE_STATUS, &success));
         if (success == GL_FALSE)
         {
             std::array<char, 1024> log{};
-            glCheck(GLEXT_glGetInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr, log.data()));
+            glCheck(GLEXT_glGetShaderInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr, log.data()));
             err() << "Failed to compile " << shaderTypeStr << " shader:" << '\n' << log.data() << std::endl;
-            glCheck(GLEXT_glDeleteObject(shader));
-            glCheck(GLEXT_glDeleteObject(shaderProgram));
+            glCheck(GLEXT_glDeleteShader(shader));
+            glCheck(GLEXT_glDeleteProgram(shaderProgram));
             return false;
         }
 
         // Attach the shader to the program, and delete it (not needed anymore)
-        glCheck(GLEXT_glAttachObject(shaderProgram, shader));
-        glCheck(GLEXT_glDeleteObject(shader));
+        glCheck(GLEXT_glAttachShader(shaderProgram, shader));
+        glCheck(GLEXT_glDeleteShader(shader));
         return true;
     };
 
@@ -902,10 +1048,12 @@ bool Shader::compile(std::string_view vertexShaderCode, std::string_view geometr
         if (!createAndAttachShader(GLEXT_GL_VERTEX_SHADER, "vertex", vertexShaderCode))
             return false;
 
+#ifndef SFML_OPENGL_ES
     // Create the geometry shader if needed
     if (!geometryShaderCode.empty())
         if (!createAndAttachShader(GLEXT_GL_GEOMETRY_SHADER, "geometry", geometryShaderCode))
             return false;
+#endif
 
     // Create the fragment shader if needed
     if (!fragmentShaderCode.empty())
@@ -917,20 +1065,20 @@ bool Shader::compile(std::string_view vertexShaderCode, std::string_view geometr
 
     // Check the link log
     GLint success = 0;
-    glCheck(GLEXT_glGetObjectParameteriv(shaderProgram, GLEXT_GL_OBJECT_LINK_STATUS, &success));
+    glCheck(GLEXT_glGetProgramParameteriv(shaderProgram, GLEXT_GL_OBJECT_LINK_STATUS, &success));
     if (success == GL_FALSE)
     {
         std::array<char, 1024> log{};
-        glCheck(GLEXT_glGetInfoLog(shaderProgram, static_cast<GLsizei>(log.size()), nullptr, log.data()));
+        glCheck(GLEXT_glGetProgramInfoLog(shaderProgram, static_cast<GLsizei>(log.size()), nullptr, log.data()));
         err() << "Failed to link shader:" << '\n' << log.data() << std::endl;
-        glCheck(GLEXT_glDeleteObject(shaderProgram));
+        glCheck(GLEXT_glDeleteProgram(shaderProgram));
         return false;
     }
 
     // Destroy the shader if it was already created
     if (m_shaderProgram)
     {
-        glCheck(GLEXT_glDeleteObject(castToGlHandle(m_shaderProgram)));
+        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
         m_shaderProgram = 0;
     }
 
@@ -988,336 +1136,3 @@ int Shader::getUniformLocation(const std::string& name)
 }
 
 } // namespace sf
-
-#else // SFML_OPENGL_ES
-
-// OpenGL ES 1 doesn't support GLSL shaders at all, we have to provide an empty implementation
-
-namespace sf
-{
-////////////////////////////////////////////////////////////
-Shader::Shader(const std::filesystem::path& /* filename */, Type /* type */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(const std::filesystem::path& /* vertexShaderFilename */,
-               const std::filesystem::path& /* fragmentShaderFilename */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(const std::filesystem::path& /* vertexShaderFilename */,
-               const std::filesystem::path& /* geometryShaderFilename */,
-               const std::filesystem::path& /* fragmentShaderFilename */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(std::string_view /* shader */, Type /* type */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(std::string_view /* vertexShader */, std::string_view /* fragmentShader */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(std::string_view /* vertexShader */, std::string_view /* geometryShader */, std::string_view /* fragmentShader */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(InputStream& /* stream */, Type /* type */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(InputStream& /* vertexShaderStream */, InputStream& /* fragmentShaderStream */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(InputStream& /* vertexShaderStream */,
-               InputStream& /* geometryShaderStream */,
-               InputStream& /* fragmentShaderStream */)
-{
-    throw Exception("Shaders are not supported with OpenGL ES 1");
-}
-
-
-////////////////////////////////////////////////////////////
-Shader::~Shader() = default;
-
-
-////////////////////////////////////////////////////////////
-Shader::Shader(Shader&& source) noexcept = default;
-
-
-////////////////////////////////////////////////////////////
-Shader& Shader::operator=(Shader&& right) noexcept = default;
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromFile(const std::filesystem::path& /* filename */, Type /* type */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromFile(const std::filesystem::path& /* vertexShaderFilename */,
-                          const std::filesystem::path& /* fragmentShaderFilename */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromFile(const std::filesystem::path& /* vertexShaderFilename */,
-                          const std::filesystem::path& /* geometryShaderFilename */,
-                          const std::filesystem::path& /* fragmentShaderFilename */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromMemory(std::string_view /* shader */, Type /* type */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromMemory(std::string_view /* vertexShader */, std::string_view /* fragmentShader */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromMemory(std::string_view /* vertexShader */,
-                            std::string_view /* geometryShader */,
-                            std::string_view /* fragmentShader */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromStream(InputStream& /* stream */, Type /* type */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromStream(InputStream& /* vertexShaderStream */, InputStream& /* fragmentShaderStream */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::loadFromStream(InputStream& /* vertexShaderStream */,
-                            InputStream& /* geometryShaderStream */,
-                            InputStream& /* fragmentShaderStream */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, float)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, Glsl::Vec2)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Vec3&)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Vec4&)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, int)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, Glsl::Ivec2)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Ivec3&)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Ivec4&)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, bool)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, Glsl::Bvec2)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Bvec3&)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Bvec4&)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Mat3& /* matrix */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Glsl::Mat4& /* matrix */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, const Texture& /* texture */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniform(const std::string& /* name */, CurrentTextureType)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniformArray(const std::string& /* name */, const float* /* scalarArray */, std::size_t /* length */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniformArray(const std::string& /* name */, const Glsl::Vec2* /* vectorArray */, std::size_t /* length */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniformArray(const std::string& /* name */, const Glsl::Vec3* /* vectorArray */, std::size_t /* length */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniformArray(const std::string& /* name */, const Glsl::Vec4* /* vectorArray */, std::size_t /* length */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniformArray(const std::string& /* name */, const Glsl::Mat3* /* matrixArray */, std::size_t /* length */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::setUniformArray(const std::string& /* name */, const Glsl::Mat4* /* matrixArray */, std::size_t /* length */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-unsigned int Shader::getNativeHandle() const
-{
-    return 0;
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::bind(const Shader* /* shader */)
-{
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::isAvailable()
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::isGeometryAvailable()
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-bool Shader::compile(std::string_view /* vertexShaderCode */,
-                     std::string_view /* geometryShaderCode */,
-                     std::string_view /* fragmentShaderCode */)
-{
-    return false;
-}
-
-
-////////////////////////////////////////////////////////////
-void Shader::bindTextures() const
-{
-}
-
-} // namespace sf
-
-#endif // SFML_OPENGL_ES
