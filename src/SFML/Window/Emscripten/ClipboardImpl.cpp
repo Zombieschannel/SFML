@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2024 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,28 +22,30 @@
 //
 ////////////////////////////////////////////////////////////
 
-#pragma once
-
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Config.hpp>
-
-#if defined(SFML_SYSTEM_WINDOWS)
-#include <SFML/Window/Win32/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_LINUX) || defined(SFML_SYSTEM_FREEBSD) || defined(SFML_SYSTEM_OPENBSD) || \
-    defined(SFML_SYSTEM_NETBSD)
-#if defined(SFML_USE_DRM)
-#include <SFML/Window/DRM/ClipboardImpl.hpp>
-#else
-#include <SFML/Window/Unix/ClipboardImpl.hpp>
-#endif
-#elif defined(SFML_SYSTEM_MACOS)
-#include <SFML/Window/macOS/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_IOS)
-#include <SFML/Window/iOS/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_ANDROID)
-#include <SFML/Window/Android/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_EMSCRIPTEN)
 #include <SFML/Window/Emscripten/ClipboardImpl.hpp>
-#endif
+#include <SFML/System/Err.hpp>
+#include <SFML/System/String.hpp>
+
+#include <ostream>
+
+
+namespace sf::priv
+{
+////////////////////////////////////////////////////////////
+String ClipboardImpl::getString()
+{
+    err() << "Clipboard API not implemented for Emscripten.\n";
+    return String();
+}
+
+
+////////////////////////////////////////////////////////////
+void ClipboardImpl::setString(const String& /* text */)
+{
+    err() << "Clipboard API not implemented for Emscripten.\n";
+}
+
+} // namespace sf::priv

@@ -22,28 +22,63 @@
 //
 ////////////////////////////////////////////////////////////
 
-#pragma once
-
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Config.hpp>
+#include <SFML/Window/SensorImpl.hpp>
 
-#if defined(SFML_SYSTEM_WINDOWS)
-#include <SFML/Window/Win32/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_LINUX) || defined(SFML_SYSTEM_FREEBSD) || defined(SFML_SYSTEM_OPENBSD) || \
-    defined(SFML_SYSTEM_NETBSD)
-#if defined(SFML_USE_DRM)
-#include <SFML/Window/DRM/ClipboardImpl.hpp>
-#else
-#include <SFML/Window/Unix/ClipboardImpl.hpp>
-#endif
-#elif defined(SFML_SYSTEM_MACOS)
-#include <SFML/Window/macOS/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_IOS)
-#include <SFML/Window/iOS/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_ANDROID)
-#include <SFML/Window/Android/ClipboardImpl.hpp>
-#elif defined(SFML_SYSTEM_EMSCRIPTEN)
-#include <SFML/Window/Emscripten/ClipboardImpl.hpp>
-#endif
+
+namespace sf::priv
+{
+////////////////////////////////////////////////////////////
+void SensorImpl::initialize()
+{
+    // Not applicable
+}
+
+
+////////////////////////////////////////////////////////////
+void SensorImpl::cleanup()
+{
+    // Not applicable
+}
+
+
+////////////////////////////////////////////////////////////
+bool SensorImpl::isAvailable(Sensor::Type /* sensor */)
+{
+    // Not applicable
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+bool SensorImpl::open(Sensor::Type /* sensor */)
+{
+    // Not applicable
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+void SensorImpl::close()
+{
+    // Not applicable
+}
+
+
+////////////////////////////////////////////////////////////
+Vector3f SensorImpl::update()
+{
+    // Not applicable
+    return {};
+}
+
+
+////////////////////////////////////////////////////////////
+void SensorImpl::setEnabled(bool /* enabled */)
+{
+    // Not applicable
+}
+
+} // namespace sf::priv

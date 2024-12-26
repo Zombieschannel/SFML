@@ -26,11 +26,15 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Audio/SoundFileFactory.hpp>
+#ifndef SFML_SYSTEM_EMSCRIPTEN
 #include <SFML/Audio/SoundFileReaderFlac.hpp>
+#endif
 #include <SFML/Audio/SoundFileReaderMp3.hpp>
 #include <SFML/Audio/SoundFileReaderOgg.hpp>
 #include <SFML/Audio/SoundFileReaderWav.hpp>
+#ifndef SFML_SYSTEM_EMSCRIPTEN
 #include <SFML/Audio/SoundFileWriterFlac.hpp>
+#endif
 #include <SFML/Audio/SoundFileWriterOgg.hpp>
 #include <SFML/Audio/SoundFileWriterWav.hpp>
 
@@ -141,7 +145,10 @@ std::unique_ptr<SoundFileWriter> SoundFileFactory::createWriterFromFilename(cons
 SoundFileFactory::ReaderFactoryMap& SoundFileFactory::getReaderFactoryMap()
 {
     // The map is pre-populated with default readers on construction
-    static ReaderFactoryMap result{{&priv::createReader<priv::SoundFileReaderFlac>, &priv::SoundFileReaderFlac::check},
+    static ReaderFactoryMap result{
+#ifndef SFML_SYSTEM_EMSCRIPTEN
+                                   {&priv::createReader<priv::SoundFileReaderFlac>, &priv::SoundFileReaderFlac::check},
+#endif
                                    {&priv::createReader<priv::SoundFileReaderMp3>, &priv::SoundFileReaderMp3::check},
                                    {&priv::createReader<priv::SoundFileReaderOgg>, &priv::SoundFileReaderOgg::check},
                                    {&priv::createReader<priv::SoundFileReaderWav>, &priv::SoundFileReaderWav::check}};
@@ -154,7 +161,10 @@ SoundFileFactory::ReaderFactoryMap& SoundFileFactory::getReaderFactoryMap()
 SoundFileFactory::WriterFactoryMap& SoundFileFactory::getWriterFactoryMap()
 {
     // The map is pre-populated with default writers on construction
-    static WriterFactoryMap result{{&priv::createWriter<priv::SoundFileWriterFlac>, &priv::SoundFileWriterFlac::check},
+    static WriterFactoryMap result{
+#ifndef SFML_SYSTEM_EMSCRIPTEN
+                                   {&priv::createWriter<priv::SoundFileWriterFlac>, &priv::SoundFileWriterFlac::check},
+#endif
                                    {&priv::createWriter<priv::SoundFileWriterOgg>, &priv::SoundFileWriterOgg::check},
                                    {&priv::createWriter<priv::SoundFileWriterWav>, &priv::SoundFileWriterWav::check}};
 

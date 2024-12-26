@@ -19,6 +19,8 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "iOS")
     set(FIND_SFML_OS_IOS 1)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(FIND_SFML_OS_MACOS 1)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+    set(FIND_SFML_OS_EMSCRIPTEN 1)
 endif()
 
 # When installing, save whether SFML was built using system dependencies.
