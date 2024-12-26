@@ -198,7 +198,7 @@ inline int SF_GL_OES_framebuffer_object = 1;
 #define GLEXT_blend_equation_separate_dependencies ::sf::priv::SF_GL_OES_blend_equation_separate, glBlendEquationSeparate
 
 // Core since 2.0 - OES_texture_npot
-#define GLEXT_texture_non_power_of_two false
+#define GLEXT_texture_non_power_of_two true
 
 // Core since 2.0 - OES_framebuffer_object
 #define GLEXT_framebuffer_object               true

@@ -74,4 +74,10 @@
     #include <GLES2/gl2platform.h>
     #include <GLES2/gl2ext.h>
 
+#elif defined (SFML_SYSTEM_EMSCRIPTEN)
+
+    #include <GLES2/gl2.h>
+    #include <GLES2/gl2platform.h>
+    #include <GLES2/gl2ext.h>
+
 #endif

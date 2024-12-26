@@ -29,6 +29,12 @@
 ////////////////////////////////////////////////////////////
 #include <SFML/Config.hpp>
 
+#ifndef SFML_SYSTEM_EMSCRIPTEN
+
+#include <glad/egl.h>
+
+#endif
+
 #include <string_view>
 
 namespace sf::priv
