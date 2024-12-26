@@ -30,7 +30,13 @@
 
 #include <SFML/System/Err.hpp>
 
+// Emscripten does not use GLAD
+#ifdef SFML_SYSTEM_EMSCRIPTEN
+#define KHRONOS_APIENTRY
+#include <EGL/egl.h>
+#else
 #include <glad/egl.h>
+#endif
 
 #include <filesystem>
 #include <ostream>

@@ -65,6 +65,48 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
 # let's avoid it so the actual error is more visible
 elseif(${CYGWIN})
     message(FATAL_ERROR "Unfortunately SFML doesn't support Cygwin's 'hybrid' status between both Windows and Linux derivatives.\nIf you insist on using the GCC, please use a standalone build of MinGW without the Cygwin environment instead.")
+elseif(${EMSCRIPTEN})
+    set(SFML_OS_EMSCRIPTEN 1)
+    # use the OpenGL ES implementation on Emscripten
+    set(OPENGL_ES 1)
+    set(SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS_DEBUG -g3 -gsource-map -O0)
+    set(SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS_RELEASE -O3)
+    set(SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS
+        $<$<CONFIG:Debug>:${SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS_DEBUG}>
+        $<$<CONFIG:Release>:${SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS_RELEASE}>
+        #-pthread     # Enable threading support
+    )
+    set(SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_DEBUG -g3 -gsource-map -sASSERTIONS=2 -sCHECK_NULL_WRITES=1 -sSAFE_HEAP=1 -sSTACK_OVERFLOW_CHECK=1)
+    set(SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_RELEASE -O3 -SMINIFY_HTML=1)
+    set(SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_ASYNCIFY
+        -sASYNCIFY=1                        # Support async operations in the compiled code (used for game loop)
+        -sASYNCIFY_IGNORE_INDIRECT=1        # Assume indirect calls can’t lead to an unwind/rewind of the stack (faster)
+    )
+    set(SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_JSPI
+        -sJSPI=1                            # Use VM support for the JavaScript Promise Integration proposal
+    )
+    set(SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS
+        $<$<CONFIG:Debug>:${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_DEBUG}>
+        $<$<CONFIG:Release>:${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_RELEASE}>
+        ${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_ASYNCIFY}
+        # ${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS_JSPI}
+        #-pthread                            # Enable threading support
+        -Wno-limited-postlink-optimizations # warning: running limited binaryen optimizations because DWARF info requested (or indirectly required)
+        -Wno-pthreads-mem-growth            # warning: -pthread + ALLOW_MEMORY_GROWTH may run non-wasm code slowly, see https://github.com/WebAssembly/design/issues/1271
+        -sALLOW_MEMORY_GROWTH=1             # Grow the memory arrays at runtime
+        -sEXIT_RUNTIME=1                    # Execute cleanup (e.g. `atexit`) after `main` completes
+        -sFETCH=1                           # Enables `emscripten_fetch` API
+        -sFORCE_FILESYSTEM=1                # Makes full filesystem support be included
+        -sFULL_ES2=1                        # Forces support for all GLES2 features, not just the WebGL-friendly subset
+        -sMAX_WEBGL_VERSION=1               # Specifies the highest WebGL version to target
+        -sMIN_WEBGL_VERSION=1               # Specifies the lowest WebGL version to target
+        -sSTACK_SIZE=4mb                    # Set the total stack size
+        #-sUSE_PTHREADS=1                    # Enable threading support
+        -sWASM=1                            # Compile code to WebAssembly
+        -sGL_EXPLICIT_UNIFORM_LOCATION=1
+        -sGL_EXPLICIT_UNIFORM_BINDING=1
+        --emrun                             # Add native support for `emrun` (I/O capture)
+    )
 else()
     message(FATAL_ERROR "Unsupported operating system or environment")
     return()

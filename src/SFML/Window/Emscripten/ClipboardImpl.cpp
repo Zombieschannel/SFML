@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2025 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2023 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,28 +22,30 @@
 //
 ////////////////////////////////////////////////////////////
 
-#pragma once
-
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Config.hpp>
+#include <SFML/Window/Emscripten/ClipboardImpl.hpp>
+#include <SFML/System/Err.hpp>
+#include <SFML/System/String.hpp>
 
-#if defined(SFML_SYSTEM_WINDOWS)
-#include <SFML/Window/Win32/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_LINUX) || defined(SFML_SYSTEM_FREEBSD) || defined(SFML_SYSTEM_OPENBSD) || \
-    defined(SFML_SYSTEM_NETBSD)
-#if defined(SFML_USE_DRM)
-#include <SFML/Window/DRM/CursorImpl.hpp>
-#else
-#include <SFML/Window/Unix/CursorImpl.hpp>
-#endif
-#elif defined(SFML_SYSTEM_MACOS)
-#include <SFML/Window/macOS/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_IOS)
-#include <SFML/Window/iOS/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_ANDROID)
-#include <SFML/Window/Android/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_EMSCRIPTEN)
-#include <SFML/Window/Android/CursorImpl.hpp>
-#endif
+#include <ostream>
+
+
+namespace sf::priv
+{
+////////////////////////////////////////////////////////////
+String ClipboardImpl::getString()
+{
+    err() << "Clipboard API not implemented for Emscripten.\n";
+    return String();
+}
+
+
+////////////////////////////////////////////////////////////
+void ClipboardImpl::setString(const String& /* text */)
+{
+    err() << "Clipboard API not implemented for Emscripten.\n";
+}
+
+} // namespace sf::priv

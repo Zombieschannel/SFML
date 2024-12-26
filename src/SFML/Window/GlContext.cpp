@@ -100,6 +100,11 @@ using ContextType = sf::priv::EaglContext;
 #include <SFML/Window/EglContext.hpp>
 using ContextType = sf::priv::EglContext;
 
+#elif defined(SFML_SYSTEM_EMSCRIPTEN)
+
+#include <SFML/Window/EglContext.hpp>
+using ContextType = sf::priv::EglContext;
+
 #endif
 
 #if defined(SFML_SYSTEM_WINDOWS)

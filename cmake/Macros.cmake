@@ -93,6 +93,11 @@ macro(sfml_add_library module)
         target_precompile_headers(${target} REUSE_FROM sfml-system)
     endif()
 
+    if(SFML_OS_EMSCRIPTEN)
+        target_compile_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS})
+        target_link_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS})
+    endif()
+
     # define the export symbol of the module
     string(REPLACE "-" "_" NAME_UPPER "${target}")
     string(TOUPPER "${NAME_UPPER}" NAME_UPPER)
@@ -357,6 +362,13 @@ macro(sfml_add_example target)
     # link the target to its SFML dependencies
     if(THIS_DEPENDS)
         target_link_libraries(${target} PRIVATE ${THIS_DEPENDS})
+    endif()
+
+    # set required compile/link options for emscripten and preload resource files
+    if(SFML_OS_EMSCRIPTEN)
+        target_compile_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_COMPILE_OPTIONS})
+        target_link_options(${target} PRIVATE ${SFML_EMSCRIPTEN_TARGET_LINK_OPTIONS})
+        set_target_properties(${target} PROPERTIES SUFFIX ".html")
     endif()
 
     if(SFML_OS_IOS)

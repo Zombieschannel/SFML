@@ -31,7 +31,11 @@
 
 #include <SFML/System/Err.hpp>
 
+#ifndef SFML_SYSTEM_EMSCRIPTEN
+
 #include <glad/egl.h>
+
+#endif
 
 #include <ostream>
 #include <string_view>
