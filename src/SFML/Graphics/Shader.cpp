@@ -69,7 +69,7 @@ std::size_t getMaxTextureUnits()
     static const GLint maxUnits = []
     {
         GLint value = 0;
-        glCheck(glGetIntegerv(GLEXT_GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &value));
+        glCheck(glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &value));
 
         return value;
     }();
@@ -187,13 +187,10 @@ struct Shader::UniformBinder
         {
 
             // Enable program object
-#ifndef SFML_OPENGL_ES
-            glCheck(savedProgram = GLEXT_glGetHandle(GLEXT_GL_PROGRAM_OBJECT));
-#else
             glCheck(glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint*>(&savedProgram)));
-#endif
+
             if (currentProgram != savedProgram)
-                glCheck(GLEXT_glUseProgramObject(currentProgram));
+                glCheck(glUseProgram(currentProgram));
             // Store uniform location for further use outside constructor
             location = shader.getUniformLocation(name);
         }
@@ -207,7 +204,7 @@ struct Shader::UniformBinder
     {
         // Disable program object
         if (currentProgram && (currentProgram != savedProgram))
-            glCheck(GLEXT_glUseProgramObject(savedProgram));
+            glCheck(glUseProgram(savedProgram));
     }
 
     ////////////////////////////////////////////////////////////
@@ -222,10 +219,10 @@ struct Shader::UniformBinder
     ////////////////////////////////////////////////////////////
     UniformBinder& operator=(const UniformBinder&) = delete;
 
-    TransientContextLock lock;           //!< Lock to keep context active while uniform is bound
-    GLEXT_GLhandle       savedProgram{}; //!< Handle to the previously active program object
-    GLEXT_GLhandle       currentProgram; //!< Handle to the program object of the modified sf::Shader instance
-    GLint                location{-1};   //!< Uniform location, used by the surrounding sf::Shader code
+    TransientContextLock lock;     //!< Lock to keep context active while uniform is bound
+    GLhandleARB       savedProgram{}; //!< Handle to the previously active program object
+    GLhandleARB       currentProgram; //!< Handle to the program object of the modified sf::Shader instance
+    GLint          location{-1};   //!< Uniform location, used by the surrounding sf::Shader code
 };
 
 
@@ -310,7 +307,7 @@ Shader::~Shader()
 
     // Destroy effect program
     if (m_shaderProgram)
-        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
+        glCheck(glDeleteProgram(castToGlHandle(m_shaderProgram)));
 }
 
 ////////////////////////////////////////////////////////////
@@ -335,7 +332,7 @@ Shader& Shader::operator=(Shader&& right) noexcept
     {
         // Destroy effect program
         const TransientContextLock lock;
-        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
+        glCheck(glDeleteProgram(castToGlHandle(m_shaderProgram)));
     }
 
     // Move the contents of right.
@@ -540,7 +537,7 @@ void Shader::setUniform(const std::string& name, float x)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform1f(binder.location, x));
+        glCheck(glUniform1f(binder.location, x));
 }
 
 
@@ -549,7 +546,7 @@ void Shader::setUniform(const std::string& name, Glsl::Vec2 v)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform2f(binder.location, v.x, v.y));
+        glCheck(glUniform2f(binder.location, v.x, v.y));
 }
 
 
@@ -558,7 +555,7 @@ void Shader::setUniform(const std::string& name, const Glsl::Vec3& v)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform3f(binder.location, v.x, v.y, v.z));
+        glCheck(glUniform3f(binder.location, v.x, v.y, v.z));
 }
 
 
@@ -567,7 +564,7 @@ void Shader::setUniform(const std::string& name, const Glsl::Vec4& v)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform4f(binder.location, v.x, v.y, v.z, v.w));
+        glCheck(glUniform4f(binder.location, v.x, v.y, v.z, v.w));
 }
 
 
@@ -576,7 +573,7 @@ void Shader::setUniform(const std::string& name, int x)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform1i(binder.location, x));
+        glCheck(glUniform1i(binder.location, x));
 }
 
 
@@ -585,7 +582,7 @@ void Shader::setUniform(const std::string& name, Glsl::Ivec2 v)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform2i(binder.location, v.x, v.y));
+        glCheck(glUniform2i(binder.location, v.x, v.y));
 }
 
 
@@ -594,7 +591,7 @@ void Shader::setUniform(const std::string& name, const Glsl::Ivec3& v)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform3i(binder.location, v.x, v.y, v.z));
+        glCheck(glUniform3i(binder.location, v.x, v.y, v.z));
 }
 
 
@@ -603,7 +600,7 @@ void Shader::setUniform(const std::string& name, const Glsl::Ivec4& v)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform4i(binder.location, v.x, v.y, v.z, v.w));
+        glCheck(glUniform4i(binder.location, v.x, v.y, v.z, v.w));
 }
 
 
@@ -640,7 +637,7 @@ void Shader::setUniform(const std::string& name, const Glsl::Mat3& matrix)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniformMatrix3fv(binder.location, 1, GL_FALSE, matrix.array.data()));
+        glCheck(glUniformMatrix3fv(binder.location, 1, GL_FALSE, matrix.array.data()));
 }
 
 
@@ -649,7 +646,7 @@ void Shader::setUniform(const std::string& name, const Glsl::Mat4& matrix)
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniformMatrix4fv(binder.location, 1, GL_FALSE, matrix.array.data()));
+        glCheck(glUniformMatrix4fv(binder.location, 1, GL_FALSE, matrix.array.data()));
 }
 
 
@@ -706,7 +703,7 @@ void Shader::setUniformArray(const std::string& name, const float* scalarArray, 
 {
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform1fv(binder.location, static_cast<GLsizei>(length), scalarArray));
+        glCheck(glUniform1fv(binder.location, static_cast<GLsizei>(length), scalarArray));
 }
 
 
@@ -717,7 +714,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec2* vectorAr
 
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform2fv(binder.location, static_cast<GLsizei>(length), contiguous.data()));
+        glCheck(glUniform2fv(binder.location, static_cast<GLsizei>(length), contiguous.data()));
 }
 
 
@@ -728,7 +725,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec3* vectorAr
 
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform3fv(binder.location, static_cast<GLsizei>(length), contiguous.data()));
+        glCheck(glUniform3fv(binder.location, static_cast<GLsizei>(length), contiguous.data()));
 }
 
 
@@ -739,7 +736,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Vec4* vectorAr
 
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniform4fv(binder.location, static_cast<GLsizei>(length), contiguous.data()));
+        glCheck(glUniform4fv(binder.location, static_cast<GLsizei>(length), contiguous.data()));
 }
 
 
@@ -754,7 +751,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Mat3* matrixAr
 
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniformMatrix3fv(binder.location, static_cast<GLsizei>(length), GL_FALSE, contiguous.data()));
+        glCheck(glUniformMatrix3fv(binder.location, static_cast<GLsizei>(length), GL_FALSE, contiguous.data()));
 }
 
 
@@ -769,7 +766,7 @@ void Shader::setUniformArray(const std::string& name, const Glsl::Mat4* matrixAr
 
     const UniformBinder binder(*this, name);
     if (binder.location != -1)
-        glCheck(GLEXT_glUniformMatrix4fv(binder.location, static_cast<GLsizei>(length), GL_FALSE, contiguous.data()));
+        glCheck(glUniformMatrix4fv(binder.location, static_cast<GLsizei>(length), GL_FALSE, contiguous.data()));
 }
 
 
@@ -796,19 +793,19 @@ void Shader::bind(const Shader* shader)
     if (shader && shader->m_shaderProgram)
     {
         // Enable the program
-        glCheck(GLEXT_glUseProgramObject(castToGlHandle(shader->m_shaderProgram)));
+        glCheck(glUseProgram(castToGlHandle(shader->m_shaderProgram)));
 
         // Bind the textures
         shader->bindTextures();
 
         // Bind the current texture
         if (shader->m_currentTexture != -1)
-            glCheck(GLEXT_glUniform1i(shader->m_currentTexture, 0));
+            glCheck(glUniform1i(shader->m_currentTexture, 0));
     }
     else
     {
         // Bind no shader
-        glCheck(GLEXT_glUseProgramObject({}));
+        glCheck(glUseProgram({}));
     }
 }
 
@@ -816,23 +813,7 @@ void Shader::bind(const Shader* shader)
 ////////////////////////////////////////////////////////////
 bool Shader::isAvailable()
 {
-    static const bool available = []
-    {
-        const TransientContextLock contextLock;
-
-        // Make sure that extensions are initialized
-        priv::ensureExtensionsInit();
-
-#ifdef SFML_OPENGL_ES
-        return true;
-#else
-        return GLEXT_multitexture && GLEXT_shading_language_100 && GLEXT_shader_objects && GLEXT_vertex_shader &&
-               GLEXT_fragment_shader;
-#endif
-
-    }();
-
-    return available;
+    return true;
 }
 
 
@@ -849,7 +830,7 @@ bool Shader::isGeometryAvailable()
 #ifdef SFML_OPENGL_ES
         return false;
 #else
-        return isAvailable() && (GLEXT_geometry_shader4 || GLEXT_GL_VERSION_3_2);
+        return true;
 #endif
 
     }();
@@ -865,12 +846,18 @@ const Shader& Shader::getDefaultShader()
 
     if (first)
     {
-#ifdef SFML_OPENGL_ES
         static_cast<void>(instance.loadFromMemory(
+#ifdef SFML_OPENGL_ES
             "#version 100\n"
             "attribute vec2 position;"
             "attribute vec4 color;"
             "varying vec4 sf_color;"
+#else
+            "#version 330 core\n"
+            "in vec2 position;"
+            "in vec4 color;"
+            "out vec4 sf_color;"
+#endif
             "uniform mat4 sf_modelview;"
             "uniform mat4 sf_projection;"
             "void main()"
@@ -880,30 +867,19 @@ const Shader& Shader::getDefaultShader()
             "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
             "}",
 
+#ifdef SFML_OPENGL_ES
             "#version 100\n"
             "precision mediump float;"
             "varying vec4 sf_color;"
+#else
+            "#version 330 core\n"
+            "in vec4 sf_color;"
+#endif
             "void main()"
             "{"
             "    gl_FragColor = sf_color;"
             "}"
         ));
-#else
-        static_cast<void>(instance.loadFromMemory(
-            "#version 120\n"
-            "void main()"
-            "{"
-            "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
-            "    gl_FrontColor = gl_Color;"
-            "}",
-
-            "#version 120\n"
-            "void main()"
-            "{"
-            "    gl_FragColor = gl_Color;"
-            "}"
-        ));
-#endif
         first = false;
     }
 
@@ -919,14 +895,22 @@ const Shader& Shader::getDefaultTexShader()
 
     if (first)
     {
-#ifdef SFML_OPENGL_ES
         static_cast<void>(instance.loadFromMemory(
+#ifdef SFML_OPENGL_ES
             "#version 100\n"
             "attribute vec2 position;"
             "attribute vec4 color;"
             "attribute vec2 texCoord;"
             "varying vec4 sf_color;"
             "varying vec2 sf_texCoord;"
+#else
+            "#version 330 core\n"
+            "in vec2 position;"
+            "in vec4 color;"
+            "in vec2 texCoord;"
+            "out vec4 sf_color;"
+            "out vec2 sf_texCoord;"
+#endif
             "uniform mat4 sf_modelview;"
             "uniform mat4 sf_projection;"
             "void main()"
@@ -937,10 +921,16 @@ const Shader& Shader::getDefaultTexShader()
             "    gl_Position = sf_projection * sf_modelview * vec4(pos.xy, 0.0, 1.0);"
             "}",
 
+#ifdef SFML_OPENGL_ES
             "#version 100\n"
             "precision mediump float;"
             "varying vec4 sf_color;"
             "varying vec2 sf_texCoord;"
+#else
+            "#version 330 core\n"
+            "in vec4 sf_color;"
+            "in vec2 sf_texCoord;"
+#endif
             "uniform sampler2D sf_sampler;"
             "uniform mat4 sf_texture;"
             "uniform vec2 factor_npot;"
@@ -951,25 +941,6 @@ const Shader& Shader::getDefaultTexShader()
             "    gl_FragColor = texture2D(sf_sampler, coord.xy) * sf_color;"
             "}"
         ));
-#else
-        static_cast<void>(instance.loadFromMemory(
-            "#version 120\n"
-            "void main()"
-            "{"
-            "    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
-            "    gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;"
-            "    gl_FrontColor = gl_Color;"
-            "}",
-
-            "#version 120\n"
-            "uniform sampler2D texture;"
-            "void main()"
-            "{"
-            "    vec4 pixel = texture2D(texture, gl_TexCoord[0].xy);"
-            "    gl_FragColor = gl_Color * pixel;"
-            "}"
-        ));
-#endif
         first = false;
     }
 
@@ -1001,7 +972,7 @@ bool Shader::compile(std::string_view vertexShaderCode, std::string_view geometr
     // Destroy the shader if it was already created
     if (m_shaderProgram)
     {
-        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
+        glCheck(glDeleteProgram(castToGlHandle(m_shaderProgram)));
         m_shaderProgram = 0;
     }
 
@@ -1011,74 +982,74 @@ bool Shader::compile(std::string_view vertexShaderCode, std::string_view geometr
     m_uniforms.clear();
 
     // Create the program
-    const GLEXT_GLhandle shaderProgram = glCheck(GLEXT_glCreateProgramObject());
+    const GLhandleARB shaderProgram = glCheck(glCreateProgram());
 
     // Helper function for shader creation
     const auto createAndAttachShader =
         [shaderProgram](GLenum shaderType, const char* shaderTypeStr, std::string_view shaderCode)
     {
         // Create and compile the shader
-        const GLEXT_GLhandle shader           = glCheck(GLEXT_glCreateShaderObject(shaderType));
+        const GLhandleARB shader           = glCheck(glCreateShader(shaderType));
         const GLcharARB*     sourceCode       = shaderCode.data();
         const auto           sourceCodeLength = static_cast<GLint>(shaderCode.length());
-        glCheck(GLEXT_glShaderSource(shader, 1, &sourceCode, &sourceCodeLength));
-        glCheck(GLEXT_glCompileShader(shader));
+        glCheck(glShaderSource(shader, 1, &sourceCode, &sourceCodeLength));
+        glCheck(glCompileShader(shader));
 
         // Check the compile log
         GLint success = 0;
-        glCheck(GLEXT_glGetShaderParameteriv(shader, GLEXT_GL_OBJECT_COMPILE_STATUS, &success));
+        glCheck(glGetShaderiv(shader, GL_COMPILE_STATUS, &success));
         if (success == GL_FALSE)
         {
             std::array<char, 1024> log{};
-            glCheck(GLEXT_glGetShaderInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr, log.data()));
+            glCheck(glGetShaderInfoLog(shader, static_cast<GLsizei>(log.size()), nullptr, log.data()));
             err() << "Failed to compile " << shaderTypeStr << " shader:" << '\n' << log.data() << std::endl;
-            glCheck(GLEXT_glDeleteShader(shader));
-            glCheck(GLEXT_glDeleteProgram(shaderProgram));
+            glCheck(glDeleteShader(shader));
+            glCheck(glDeleteProgram(shaderProgram));
             return false;
         }
 
         // Attach the shader to the program, and delete it (not needed anymore)
-        glCheck(GLEXT_glAttachShader(shaderProgram, shader));
-        glCheck(GLEXT_glDeleteShader(shader));
+        glCheck(glAttachShader(shaderProgram, shader));
+        glCheck(glDeleteShader(shader));
         return true;
     };
 
     // Create the vertex shader if needed
     if (!vertexShaderCode.empty())
-        if (!createAndAttachShader(GLEXT_GL_VERTEX_SHADER, "vertex", vertexShaderCode))
+        if (!createAndAttachShader(GL_VERTEX_SHADER, "vertex", vertexShaderCode))
             return false;
 
 #ifndef SFML_OPENGL_ES
     // Create the geometry shader if needed
     if (!geometryShaderCode.empty())
-        if (!createAndAttachShader(GLEXT_GL_GEOMETRY_SHADER, "geometry", geometryShaderCode))
+        if (!createAndAttachShader(GL_GEOMETRY_SHADER, "geometry", geometryShaderCode))
             return false;
 #endif
 
     // Create the fragment shader if needed
     if (!fragmentShaderCode.empty())
-        if (!createAndAttachShader(GLEXT_GL_FRAGMENT_SHADER, "fragment", fragmentShaderCode))
+        if (!createAndAttachShader(GL_FRAGMENT_SHADER, "fragment", fragmentShaderCode))
             return false;
 
     // Link the program
-    glCheck(GLEXT_glLinkProgram(shaderProgram));
+    glCheck(glLinkProgram(shaderProgram));
 
     // Check the link log
     GLint success = 0;
-    glCheck(GLEXT_glGetProgramParameteriv(shaderProgram, GLEXT_GL_OBJECT_LINK_STATUS, &success));
+    glCheck(glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success));
     if (success == GL_FALSE)
     {
         std::array<char, 1024> log{};
-        glCheck(GLEXT_glGetProgramInfoLog(shaderProgram, static_cast<GLsizei>(log.size()), nullptr, log.data()));
+        glCheck(glGetProgramInfoLog(shaderProgram, static_cast<GLsizei>(log.size()), nullptr, log.data()));
         err() << "Failed to link shader:" << '\n' << log.data() << std::endl;
-        glCheck(GLEXT_glDeleteProgram(shaderProgram));
+        glCheck(glDeleteProgram(shaderProgram));
         return false;
     }
 
     // Destroy the shader if it was already created
     if (m_shaderProgram)
     {
-        glCheck(GLEXT_glDeleteProgram(castToGlHandle(m_shaderProgram)));
+        glCheck(glDeleteProgram(castToGlHandle(m_shaderProgram)));
         m_shaderProgram = 0;
     }
 
@@ -1104,14 +1075,14 @@ void Shader::bindTextures() const
     for (std::size_t i = 0; i < m_textures.size(); ++i)
     {
         const auto index = static_cast<GLsizei>(i + 1);
-        glCheck(GLEXT_glUniform1i(it->first, index));
-        glCheck(GLEXT_glActiveTexture(GLEXT_GL_TEXTURE0 + static_cast<GLenum>(index)));
+        glCheck(glUniform1i(it->first, index));
+        glCheck(glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(index)));
         Texture::bind(it->second);
         ++it;
     }
 
     // Make sure that the texture unit which is left active is the number 0
-    glCheck(GLEXT_glActiveTexture(GLEXT_GL_TEXTURE0));
+    glCheck(glActiveTexture(GL_TEXTURE0));
 }
 
 
@@ -1126,7 +1097,7 @@ int Shader::getUniformLocation(const std::string& name)
     }
 
     // Not in cache, request the location from OpenGL
-    const int location = GLEXT_glGetUniformLocation(castToGlHandle(m_shaderProgram), name.c_str());
+    const int location = glGetUniformLocation(castToGlHandle(m_shaderProgram), name.c_str());
     m_uniforms.try_emplace(name, location);
 
     if (location == -1)

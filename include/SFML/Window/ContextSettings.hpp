@@ -55,9 +55,9 @@ struct ContextSettings
     unsigned int  depthBits{};                        //!< Bits of the depth buffer
     unsigned int  stencilBits{};                      //!< Bits of the stencil buffer
     unsigned int  antiAliasingLevel{};                //!< Level of anti-aliasing
-    unsigned int  majorVersion{1};                    //!< Major number of the context version to create
-    unsigned int  minorVersion{1};                    //!< Minor number of the context version to create
-    std::uint32_t attributeFlags{Attribute::Default}; //!< The attribute flags to create the context with
+    unsigned int  majorVersion{3};                    //!< Major number of the context version to create
+    unsigned int  minorVersion{3};                    //!< Minor number of the context version to create
+    std::uint32_t attributeFlags{Attribute::Core};    //!< The attribute flags to create the context with
     bool          sRgbCapable{};                      //!< Whether the context framebuffer is sRGB capable
 };
 

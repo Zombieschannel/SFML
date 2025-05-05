@@ -66,7 +66,7 @@ public:
     /// \brief Destructor
     ///
     ////////////////////////////////////////////////////////////
-    virtual ~RenderTarget() = default;
+    virtual ~RenderTarget();
 
     ////////////////////////////////////////////////////////////
     /// \brief Deleted copy constructor
@@ -555,14 +555,17 @@ private:
         BlendMode             lastBlendMode;           //!< Cached blending mode
         StencilMode           lastStencilMode;         //!< Cached stencil
         std::uint64_t         lastTextureId{};         //!< Cached texture
+        std::uint64_t         lastShaderId{};          //!< Cached shader
         CoordinateType        lastCoordinateType{};    //!< Texture coordinate type
         bool                  texCoordsArrayEnabled{}; //!< Is `GL_TEXTURE_COORD_ARRAY` client state enabled?
         bool                  useVertexCache{};        //!< Did we previously use the vertex cache?
         std::array<Vertex, 4> vertexCache{};           //!< Pre-transformed vertices cache
-        std::uint32_t         programChanged{};
         std::int32_t          posAttrib{};
         std::int32_t          colAttrib{};
         std::int32_t          texAttrib{};
+        std::uint32_t         defaultBuffer{};
+        std::uint32_t         defaultArray{};
+        std::uint32_t         defaultBufferSize{};
         enum {VertexCacheSize = 4};
     };
 
