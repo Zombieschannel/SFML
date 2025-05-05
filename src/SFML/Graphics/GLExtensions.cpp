@@ -62,24 +62,7 @@ void extensionSanityCheck()
             flag = 0;
     };
 #ifdef SFML_OPENGL_ES
-    check(GLEXT_multitexture_dependencies);
-    check(GLEXT_vertex_buffer_object_dependencies);
-    check(GLEXT_OES_blend_subtract_dependencies);
-    check(GLEXT_blend_func_separate_dependencies);
-    check(GLEXT_blend_equation_separate_dependencies);
-    check(GLEXT_framebuffer_object_dependencies);
     check(GLEXT_EXT_blend_minmax_dependencies);
-#else
-    check(GLEXT_blend_minmax_dependencies);
-    check(GLEXT_multitexture_dependencies);
-    check(GLEXT_blend_func_separate_dependencies);
-    check(GLEXT_vertex_buffer_object_dependencies);
-    check(GLEXT_shader_objects_dependencies);
-    check(GLEXT_blend_equation_separate_dependencies);
-    check(GLEXT_framebuffer_object_dependencies);
-    check(GLEXT_framebuffer_blit_dependencies);
-    check(GLEXT_framebuffer_multisample_dependencies);
-    check(GLEXT_copy_buffer_dependencies);
 #endif
 }
 } // namespace

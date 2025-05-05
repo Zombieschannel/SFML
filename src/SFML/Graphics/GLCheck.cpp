@@ -83,16 +83,10 @@ bool glCheckError(std::string_view file, unsigned int line, std::string_view exp
         case GL_INVALID_OPERATION:
             return logError("GL_INVALID_OPERATION", "The specified operation is not allowed in the current state.");
 
-        case GL_STACK_OVERFLOW:
-            return logError("GL_STACK_OVERFLOW", "This command would cause a stack overflow.");
-
-        case GL_STACK_UNDERFLOW:
-            return logError("GL_STACK_UNDERFLOW", "This command would cause a stack underflow.");
-
         case GL_OUT_OF_MEMORY:
             return logError("GL_OUT_OF_MEMORY", "There is not enough memory left to execute the command.");
 
-        case GLEXT_GL_INVALID_FRAMEBUFFER_OPERATION:
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
             return logError("GL_INVALID_FRAMEBUFFER_OPERATION",
                             "The object bound to FRAMEBUFFER_BINDING is not \"framebuffer complete\".");
 

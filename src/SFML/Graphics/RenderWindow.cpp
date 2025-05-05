@@ -94,7 +94,7 @@ bool RenderWindow::setActive(bool active)
     // try to draw to the default framebuffer of the RenderWindow
     if (active && result && priv::RenderTextureImplFBO::isAvailable())
     {
-        glCheck(GLEXT_glBindFramebuffer(GLEXT_GL_FRAMEBUFFER, m_defaultFrameBuffer));
+        glCheck(glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFrameBuffer));
 
         return true;
     }
@@ -110,7 +110,7 @@ void RenderWindow::onCreate()
     {
         // Retrieve the framebuffer ID we have to bind when targeting the window for rendering
         // We assume that this window's context is still active at this point
-        glCheck(glGetIntegerv(GLEXT_GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint*>(&m_defaultFrameBuffer)));
+        glCheck(glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint*>(&m_defaultFrameBuffer)));
     }
 
     // Just initialize the render target part

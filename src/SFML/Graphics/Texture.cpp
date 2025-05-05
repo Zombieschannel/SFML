@@ -279,57 +279,13 @@ bool Texture::resize(Vector2u size, bool sRgb)
     // Make sure that the current texture binding will be preserved
     const priv::TextureSaver save;
 
-    static const bool textureEdgeClamp = GLEXT_texture_edge_clamp || GLEXT_GL_VERSION_1_2 ||
-                                         Context::isExtensionAvailable("GL_EXT_texture_edge_clamp");
-
-    if (!textureEdgeClamp)
-    {
-        static bool warned = false;
-
-        if (!warned)
-        {
-            err() << "OpenGL extension SGIS_texture_edge_clamp unavailable" << '\n'
-                  << "Artifacts may occur along texture edges" << '\n'
-                  << "Ensure that hardware acceleration is enabled if available" << std::endl;
-
-            warned = true;
-        }
-    }
-
-    static const bool textureSrgb = GLEXT_texture_sRGB;
-
-    m_sRgb = sRgb;
-
-    if (m_sRgb && !textureSrgb)
-    {
-        static bool warned = false;
-
-        if (!warned)
-        {
-#ifndef SFML_OPENGL_ES
-            err() << "OpenGL extension EXT_texture_sRGB unavailable" << '\n';
-#else
-            err() << "OpenGL ES extension EXT_sRGB unavailable" << '\n';
-#endif
-            err() << "Automatic sRGB to linear conversion disabled" << std::endl;
-
-            warned = true;
-        }
-
-        m_sRgb = false;
-    }
-
-#ifndef SFML_OPENGL_ES
-    const GLint textureWrapParam = m_isRepeated ? GL_REPEAT : (textureEdgeClamp ? GLEXT_GL_CLAMP_TO_EDGE : GLEXT_GL_CLAMP);
-#else
-    const GLint textureWrapParam = m_isRepeated ? GL_REPEAT : GLEXT_GL_CLAMP_TO_EDGE;
-#endif
+    const GLint textureWrapParam = m_isRepeated ? GL_REPEAT : GL_CLAMP_TO_EDGE;
 
     // Initialize the texture
     glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
     glCheck(glTexImage2D(GL_TEXTURE_2D,
                          0,
-                         (m_sRgb ? GLEXT_GL_SRGB8_ALPHA8 : GL_RGBA),
+                         (m_sRgb ? GL_SRGB8_ALPHA8 : GL_RGBA),
                          static_cast<GLsizei>(m_actualSize.x),
                          static_cast<GLsizei>(m_actualSize.y),
                          0,
@@ -461,14 +417,14 @@ Image Texture::copyToImage() const
     // OpenGL ES doesn't have the glGetTexImage function, the only way to read
     // from a texture is to bind it to a FBO and use glReadPixels
     GLuint frameBuffer = 0;
-    glCheck(GLEXT_glGenFramebuffers(1, &frameBuffer));
+    glCheck(glGenFramebuffers(1, &frameBuffer));
     if (frameBuffer)
     {
         GLint previousFrameBuffer = 0;
-        glCheck(glGetIntegerv(GLEXT_GL_FRAMEBUFFER_BINDING, &previousFrameBuffer));
+        glCheck(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previousFrameBuffer));
 
-        glCheck(GLEXT_glBindFramebuffer(GLEXT_GL_FRAMEBUFFER, frameBuffer));
-        glCheck(GLEXT_glFramebufferTexture2D(GLEXT_GL_FRAMEBUFFER, GLEXT_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0));
+        glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer));
+        glCheck(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0));
         glCheck(glReadPixels(0,
                              0,
                              static_cast<GLsizei>(m_size.x),
@@ -476,9 +432,9 @@ Image Texture::copyToImage() const
                              GL_RGBA,
                              GL_UNSIGNED_BYTE,
                              pixels.data()));
-        glCheck(GLEXT_glDeleteFramebuffers(1, &frameBuffer));
+        glCheck(glDeleteFramebuffers(1, &frameBuffer));
 
-        glCheck(GLEXT_glBindFramebuffer(GLEXT_GL_FRAMEBUFFER, static_cast<GLuint>(previousFrameBuffer)));
+        glCheck(glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(previousFrameBuffer)));
 
         if (m_pixelsFlipped)
         {
@@ -611,7 +567,7 @@ void Texture::update(const Texture& texture, Vector2u dest)
         priv::ensureExtensionsInit();
     }
 
-    if (GLEXT_framebuffer_object && GLEXT_framebuffer_blit)
+    if (GLEXT_framebuffer_blit)
     {
         const TransientContextLock lock;
 
@@ -619,14 +575,14 @@ void Texture::update(const Texture& texture, Vector2u dest)
         GLint readFramebuffer = 0;
         GLint drawFramebuffer = 0;
 
-        glCheck(glGetIntegerv(GLEXT_GL_READ_FRAMEBUFFER_BINDING, &readFramebuffer));
-        glCheck(glGetIntegerv(GLEXT_GL_DRAW_FRAMEBUFFER_BINDING, &drawFramebuffer));
+        glCheck(glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFramebuffer));
+        glCheck(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFramebuffer));
 
         // Create the framebuffers
         GLuint sourceFrameBuffer = 0;
         GLuint destFrameBuffer   = 0;
-        glCheck(GLEXT_glGenFramebuffers(1, &sourceFrameBuffer));
-        glCheck(GLEXT_glGenFramebuffers(1, &destFrameBuffer));
+        glCheck(glGenFramebuffers(1, &sourceFrameBuffer));
+        glCheck(glGenFramebuffers(1, &destFrameBuffer));
 
         if (!sourceFrameBuffer || !destFrameBuffer)
         {
@@ -635,24 +591,23 @@ void Texture::update(const Texture& texture, Vector2u dest)
         }
 
         // Link the source texture to the source frame buffer
-        glCheck(GLEXT_glBindFramebuffer(GLEXT_GL_READ_FRAMEBUFFER, sourceFrameBuffer));
-        glCheck(GLEXT_glFramebufferTexture2D(GLEXT_GL_READ_FRAMEBUFFER,
-                                             GLEXT_GL_COLOR_ATTACHMENT0,
+        glCheck(glBindFramebuffer(GL_READ_FRAMEBUFFER, sourceFrameBuffer));
+        glCheck(glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
+                                             GL_COLOR_ATTACHMENT0,
                                              GL_TEXTURE_2D,
                                              texture.m_texture,
                                              0));
 
         // Link the destination texture to the destination frame buffer
-        glCheck(GLEXT_glBindFramebuffer(GLEXT_GL_DRAW_FRAMEBUFFER, destFrameBuffer));
-        glCheck(
-            GLEXT_glFramebufferTexture2D(GLEXT_GL_DRAW_FRAMEBUFFER, GLEXT_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0));
+        glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, destFrameBuffer));
+        glCheck(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0));
 
         // A final check, just to be sure...
-        const GLenum sourceStatus = glCheck(GLEXT_glCheckFramebufferStatus(GLEXT_GL_READ_FRAMEBUFFER));
+        const GLenum sourceStatus = glCheck(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER));
 
-        const GLenum destStatus = glCheck(GLEXT_glCheckFramebufferStatus(GLEXT_GL_DRAW_FRAMEBUFFER));
+        const GLenum destStatus = glCheck(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
 
-        if ((sourceStatus == GLEXT_GL_FRAMEBUFFER_COMPLETE) && (destStatus == GLEXT_GL_FRAMEBUFFER_COMPLETE))
+        if ((sourceStatus == GL_FRAMEBUFFER_COMPLETE) && (destStatus == GL_FRAMEBUFFER_COMPLETE))
         {
             // Scissor testing affects framebuffer blits as well
             // Since we don't want scissor testing to interfere with our copying, we temporarily disable it for the blit if it is enabled
@@ -664,15 +619,15 @@ void Texture::update(const Texture& texture, Vector2u dest)
 
             // Blit the texture contents from the source to the destination texture
             glCheck(GLEXT_glBlitFramebuffer(0,
-                                            texture.m_pixelsFlipped ? static_cast<GLint>(texture.m_size.y) : 0,
-                                            static_cast<GLint>(texture.m_size.x),
-                                            texture.m_pixelsFlipped ? 0 : static_cast<GLint>(texture.m_size.y), // Source rectangle, flip y if source is flipped
-                                            static_cast<GLint>(dest.x),
-                                            static_cast<GLint>(dest.y),
-                                            static_cast<GLint>(dest.x + texture.m_size.x),
-                                            static_cast<GLint>(dest.y + texture.m_size.y), // Destination rectangle
-                                            GL_COLOR_BUFFER_BIT,
-                                            GL_NEAREST));
+                                        texture.m_pixelsFlipped ? static_cast<GLint>(texture.m_size.y) : 0,
+                                        static_cast<GLint>(texture.m_size.x),
+                                        texture.m_pixelsFlipped ? 0 : static_cast<GLint>(texture.m_size.y), // Source rectangle, flip y if source is flipped
+                                        static_cast<GLint>(dest.x),
+                                        static_cast<GLint>(dest.y),
+                                        static_cast<GLint>(dest.x + texture.m_size.x),
+                                        static_cast<GLint>(dest.y + texture.m_size.y), // Destination rectangle
+                                        GL_COLOR_BUFFER_BIT,
+                                        GL_NEAREST));
 
             // Re-enable scissor testing if it was previously enabled
             if (scissorEnabled == GL_TRUE)
@@ -684,12 +639,12 @@ void Texture::update(const Texture& texture, Vector2u dest)
         }
 
         // Restore previously bound framebuffers
-        glCheck(GLEXT_glBindFramebuffer(GLEXT_GL_READ_FRAMEBUFFER, static_cast<GLuint>(readFramebuffer)));
-        glCheck(GLEXT_glBindFramebuffer(GLEXT_GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(drawFramebuffer)));
+        glCheck(glBindFramebuffer(GLEXT_GL_READ_FRAMEBUFFER, static_cast<GLuint>(readFramebuffer)));
+        glCheck(glBindFramebuffer(GLEXT_GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(drawFramebuffer)));
 
         // Delete the framebuffers
-        glCheck(GLEXT_glDeleteFramebuffers(1, &sourceFrameBuffer));
-        glCheck(GLEXT_glDeleteFramebuffers(1, &destFrameBuffer));
+        glCheck(glDeleteFramebuffers(1, &sourceFrameBuffer));
+        glCheck(glDeleteFramebuffers(1, &destFrameBuffer));
 
         // Make sure that the current texture binding will be preserved
         const priv::TextureSaver save;
@@ -831,28 +786,7 @@ void Texture::setRepeated(bool repeated)
             // Make sure that the current texture binding will be preserved
             const priv::TextureSaver save;
 
-            static const bool textureEdgeClamp = GLEXT_texture_edge_clamp;
-
-            if (!m_isRepeated && !textureEdgeClamp)
-            {
-                static bool warned = false;
-
-                if (!warned)
-                {
-                    err() << "OpenGL extension SGIS_texture_edge_clamp unavailable" << '\n'
-                          << "Artifacts may occur along texture edges" << '\n'
-                          << "Ensure that hardware acceleration is enabled if available" << std::endl;
-
-                    warned = true;
-                }
-            }
-
-#ifndef SFML_OPENGL_ES
-            const GLint textureWrapParam = m_isRepeated ? GL_REPEAT
-                                                        : (textureEdgeClamp ? GLEXT_GL_CLAMP_TO_EDGE : GLEXT_GL_CLAMP);
-#else
-            const GLint textureWrapParam = m_isRepeated ? GL_REPEAT : GLEXT_GL_CLAMP_TO_EDGE;
-#endif
+            const GLint textureWrapParam = m_isRepeated ? GL_REPEAT : GL_CLAMP_TO_EDGE;
 
             glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
             glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureWrapParam));
@@ -877,17 +811,11 @@ bool Texture::generateMipmap()
 
     const TransientContextLock lock;
 
-    // Make sure that extensions are initialized
-    priv::ensureExtensionsInit();
-
-    if (!GLEXT_framebuffer_object)
-        return false;
-
     // Make sure that the current texture binding will be preserved
     const priv::TextureSaver save;
 
     glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
-    glCheck(GLEXT_glGenerateMipmap(GL_TEXTURE_2D));
+    glCheck(glGenerateMipmap(GL_TEXTURE_2D));
     glCheck(glTexParameteri(GL_TEXTURE_2D,
                             GL_TEXTURE_MIN_FILTER,
                             m_isSmooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_LINEAR));
@@ -930,75 +858,13 @@ void Texture::bind(const Texture* texture, CoordinateType coordinateType)
         // Bind the texture
         glCheck(glBindTexture(GL_TEXTURE_2D, texture->m_texture));
 
-#ifndef SFML_OPENGL_ES
-
-        // Check if we need to define a special texture matrix
-        if ((coordinateType == CoordinateType::Pixels) || texture->m_pixelsFlipped ||
-            ((coordinateType == CoordinateType::Normalized) && (texture->m_size != texture->m_actualSize)))
-        {
-            // clang-format off
-            std::array matrix = {1.f, 0.f, 0.f, 0.f,
-                                 0.f, 1.f, 0.f, 0.f,
-                                 0.f, 0.f, 1.f, 0.f,
-                                 0.f, 0.f, 0.f, 1.f};
-            // clang-format on
-
-            // If non-normalized coordinates (= pixels) are requested, we need to
-            // setup scale factors that convert the range [0 .. size] to [0 .. 1]
-            if (coordinateType == CoordinateType::Pixels)
-            {
-                matrix[0] = 1.f / static_cast<float>(texture->m_actualSize.x);
-                matrix[5] = 1.f / static_cast<float>(texture->m_actualSize.y);
-            }
-
-            // If normalized coordinates are used when NPOT textures aren't supported,
-            // then we need to setup scale factors to make the coordinates relative to the actual POT size
-            if ((coordinateType == CoordinateType::Normalized) && (texture->m_size != texture->m_actualSize))
-            {
-                matrix[0] = static_cast<float>(texture->m_size.x) / static_cast<float>(texture->m_actualSize.x);
-                matrix[5] = static_cast<float>(texture->m_size.y) / static_cast<float>(texture->m_actualSize.y);
-            }
-
-            // If pixels are flipped we must invert the Y axis
-            if (texture->m_pixelsFlipped)
-            {
-                matrix[5]  = -matrix[5];
-                matrix[13] = static_cast<float>(texture->m_size.y) / static_cast<float>(texture->m_actualSize.y);
-            }
-
-
-            // Load the matrix
-            glCheck(glMatrixMode(GL_TEXTURE));
-            glCheck(glLoadMatrixf(matrix.data()));
-
-            // Go back to model-view mode (sf::RenderTarget relies on it)
-            glCheck(glMatrixMode(GL_MODELVIEW));
-
-        }
-
-#else
-
         (void)coordinateType;
-
-#endif
 
     }
     else
     {
         // Bind no texture
         glCheck(glBindTexture(GL_TEXTURE_2D, 0));
-
-#ifndef SFML_OPENGL_ES
-
-        // Reset the texture matrix
-        glCheck(glMatrixMode(GL_TEXTURE));
-        glCheck(glLoadIdentity());
-
-        // Go back to model-view mode (sf::RenderTarget relies on it)
-        glCheck(glMatrixMode(GL_MODELVIEW));
-
-#endif
-
     }
 }
 
@@ -1061,18 +927,7 @@ unsigned int Texture::getNativeHandle() const
 ////////////////////////////////////////////////////////////
 unsigned int Texture::getValidSize(unsigned int size)
 {
-    if (GLEXT_texture_non_power_of_two)
-    {
-        // If hardware supports NPOT textures, then just return the unmodified size
-        return size;
-    }
-
-    // If hardware doesn't support NPOT textures, we calculate the nearest power of two
-    unsigned int powerOfTwo = 1;
-    while (powerOfTwo < size)
-        powerOfTwo *= 2;
-
-    return powerOfTwo;
+    return size;
 }
 
 
