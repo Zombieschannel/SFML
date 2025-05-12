@@ -646,12 +646,18 @@ void RenderTarget::initialize()
     m_view        = m_defaultView;
 
 #ifndef SFML_OPENGL_ES
-    if (!m_cache.defaultArray)
-        glCheck(glGenVertexArrays(1, &m_cache.defaultArray));
+
+    if (m_cache.defaultArray)
+        glCheck(glDeleteVertexArrays(1, &m_cache.defaultArray));
+    glCheck(glGenVertexArrays(1, &m_cache.defaultArray));
 
 #endif
-    if (!m_cache.defaultBuffer)
-        glCheck(glGenBuffers(1, &m_cache.defaultBuffer));
+
+    if (m_cache.defaultBuffer)
+        glCheck(glDeleteBuffers(1, &m_cache.defaultBuffer));
+    glCheck(glGenBuffers(1, &m_cache.defaultBuffer));
+
+    m_cache.defaultBufferSize = 0;
 
     // Set GL states only on first draw, so that we don't pollute user's states
     m_cache.glStatesSet = false;
