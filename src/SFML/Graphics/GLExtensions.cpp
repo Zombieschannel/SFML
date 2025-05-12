@@ -63,6 +63,8 @@ void extensionSanityCheck()
     };
 #ifdef SFML_OPENGL_ES
     check(GLEXT_EXT_blend_minmax_dependencies);
+#else
+    (void)check;
 #endif
 }
 } // namespace

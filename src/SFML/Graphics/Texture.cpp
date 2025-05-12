@@ -279,6 +279,30 @@ bool Texture::resize(Vector2u size, bool sRgb)
     // Make sure that the current texture binding will be preserved
     const priv::TextureSaver save;
 
+    static const bool textureSrgb = GLEXT_texture_sRGB;
+
+    m_sRgb = sRgb;
+
+    if (m_sRgb && !textureSrgb)
+    {
+        static bool warned = false;
+
+        if (!warned)
+        {
+#ifndef SFML_OPENGL_ES
+            err() << "OpenGL extension EXT_texture_sRGB unavailable" << '\n';
+#else
+            err() << "OpenGL ES extension EXT_sRGB unavailable" << '\n';
+#endif
+            err() << "Automatic sRGB to linear conversion disabled" << std::endl;
+
+            warned = true;
+        }
+
+        m_sRgb = false;
+    }
+
+
     const GLint textureWrapParam = m_isRepeated ? GL_REPEAT : GL_CLAMP_TO_EDGE;
 
     // Initialize the texture
