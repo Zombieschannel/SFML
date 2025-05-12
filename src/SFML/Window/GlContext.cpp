@@ -583,6 +583,8 @@ std::unique_ptr<GlContext> GlContext::create(const ContextSettings& settings, co
     // If use_count is 2 (GlResource + sharedContext) we know that we are inside sf::Context or sf::Window
     // Only in this situation we allow the user to indirectly re-create the shared context as a core context
 
+#ifndef SFML_OPENGL_ES
+
     // Check if we need to convert our shared context into a core context
     if ((sharedContext.use_count() == 2) && (settings.attributeFlags & ContextSettings::Core) &&
         !(sharedContext->context->m_settings.attributeFlags & ContextSettings::Core))
@@ -601,6 +603,8 @@ std::unique_ptr<GlContext> GlContext::create(const ContextSettings& settings, co
         // Reload our extensions vector
         sharedContext->loadExtensions();
     }
+
+#endif
 
     std::unique_ptr<GlContext> context;
 
@@ -631,6 +635,8 @@ std::unique_ptr<GlContext> GlContext::create(const ContextSettings& settings, Ve
 
     // If use_count is 2 (GlResource + sharedContext) we know that we are inside sf::Context or sf::Window
     // Only in this situation we allow the user to indirectly re-create the shared context as a core context
+    
+#ifndef SFML_OPENGL_ES
 
     // Check if we need to convert our shared context into a core context
     if ((sharedContext.use_count() == 2) && (settings.attributeFlags & ContextSettings::Core) &&
@@ -650,6 +656,8 @@ std::unique_ptr<GlContext> GlContext::create(const ContextSettings& settings, Ve
         // Reload our extensions vector
         sharedContext->loadExtensions();
     }
+
+#endif
 
     // We don't use acquireTransientContext here since we have
     // to ensure we have exclusive access to the shared context
