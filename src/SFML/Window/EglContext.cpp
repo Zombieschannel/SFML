@@ -45,12 +45,16 @@
 #include <X11/Xlib.h>
 #endif
 
+#ifdef SFML_SYSTEM_ESP32
+#include "EGL.h"
+#else
 // We check for this definition in order to avoid multiple definitions of GLAD
 // entities during unity builds of SFML.
 #ifndef SF_GLAD_EGL_IMPLEMENTATION_INCLUDED
 #define SF_GLAD_EGL_IMPLEMENTATION_INCLUDED
 #define SF_GLAD_EGL_IMPLEMENTATION
 #include <glad/egl.h>
+#endif
 #endif
 
 namespace
@@ -75,6 +79,7 @@ EGLDisplay getInitializedDisplay()
 ////////////////////////////////////////////////////////////
 void ensureInit()
 {
+#ifndef SFML_SYSTEM_ESP32
     static std::once_flag flag;
 
     std::call_once(flag,
@@ -96,6 +101,7 @@ void ensureInit()
 
                        return true;
                    });
+#endif
 }
 } // namespace EglContextImpl
 } // namespace

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2026 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2007-2025 Laurent Gomila (laurent@sfml-dev.org)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,38 +22,31 @@
 //
 ////////////////////////////////////////////////////////////
 
-#pragma once
-
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Config.hpp>
+#include <SFML/Window/ESP32/ClipboardImpl.hpp>
 
-#include <SFML/Window/Sensor.hpp>
+#include <SFML/System/Err.hpp>
+#include <SFML/System/String.hpp>
 
-#if defined(SFML_SYSTEM_WINDOWS)
+#include <ostream>
 
-#include <SFML/Window/Win32/SensorImpl.hpp>
 
-#elif defined(SFML_SYSTEM_LINUX) || defined(SFML_SYSTEM_FREEBSD) || defined(SFML_SYSTEM_OPENBSD) || \
-    defined(SFML_SYSTEM_NETBSD)
+namespace sf::priv
+{
+////////////////////////////////////////////////////////////
+String ClipboardImpl::getString()
+{
+    err() << "Clipboard API not implemented for ESP32.\n";
+    return {};
+}
 
-#include <SFML/Window/Unix/SensorImpl.hpp>
 
-#elif defined(SFML_SYSTEM_MACOS)
+////////////////////////////////////////////////////////////
+void ClipboardImpl::setString(const String& /* text */)
+{
+    err() << "Clipboard API not implemented for ESP32.\n";
+}
 
-#include <SFML/Window/macOS/SensorImpl.hpp>
-
-#elif defined(SFML_SYSTEM_IOS)
-
-#include <SFML/Window/iOS/SensorImpl.hpp>
-
-#elif defined(SFML_SYSTEM_ANDROID)
-
-#include <SFML/Window/Android/SensorImpl.hpp>
-
-#elif defined(SFML_SYSTEM_ESP32)
-
-#include <SFML/Window/ESP32/SensorImpl.hpp>
-
-#endif
+} // namespace sf::priv

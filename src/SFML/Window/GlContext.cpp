@@ -31,7 +31,11 @@
 
 #include <SFML/System/Err.hpp>
 
+#ifdef SFML_SYSTEM_ESP32
+#include "GLES.h"
+#else
 #include <glad/gl.h>
+#endif
 
 #include <algorithm>
 #include <atomic>
@@ -96,6 +100,11 @@ using ContextType = sf::priv::SFContext;
 using ContextType = sf::priv::EaglContext;
 
 #elif defined(SFML_SYSTEM_ANDROID)
+
+#include <SFML/Window/EglContext.hpp>
+using ContextType = sf::priv::EglContext;
+
+#elif defined(SFML_SYSTEM_ESP32)
 
 #include <SFML/Window/EglContext.hpp>
 using ContextType = sf::priv::EglContext;

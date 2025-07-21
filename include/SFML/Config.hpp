@@ -103,6 +103,10 @@
 
 #endif
 
+#elif defined(ESP_PLATFORM)
+
+#define SFML_SYSTEM_ESP32
+
 #else
 
 // Unsupported system

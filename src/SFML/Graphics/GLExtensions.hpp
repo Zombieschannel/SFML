@@ -29,7 +29,11 @@
 ////////////////////////////////////////////////////////////
 #include <SFML/Config.hpp>
 
+#ifdef SFML_SYSTEM_ESP32
+#include "GLES.h"
+#else
 #include <glad/gl.h>
+#endif
 
 #ifdef SFML_OPENGL_ES
 
@@ -46,7 +50,7 @@ namespace sf::priv
 // Stand-ins for desktop OpenGL feature-check flags
 // NOLINTBEGIN(readability-identifier-naming)
 inline int SF_GL_OES_multitexture         = 1;
-inline int SF_GL_OES_vertex_buffer_object = 1;
+inline int SF_GL_OES_vertex_buffer_object = 0;
 // NOLINTEND(readability-identifier-naming)
 } // namespace sf::priv
 
@@ -111,7 +115,7 @@ inline int SF_GL_OES_vertex_buffer_object = 1;
 #define GLEXT_blend_equation_separate_dependencies SF_GLAD_GL_OES_blend_equation_separate, glBlendEquationSeparateOES
 
 // Core since 2.0 - OES_texture_npot
-#define GLEXT_texture_non_power_of_two false
+#define GLEXT_texture_non_power_of_two true
 
 // Core since 2.0 - OES_framebuffer_object
 #define GLEXT_framebuffer_object               SF_GLAD_GL_OES_framebuffer_object

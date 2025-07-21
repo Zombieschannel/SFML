@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////
 //
 // SFML - Simple and Fast Multimedia Library
-// Copyright (C) 2007-2026 Laurent Gomila (laurent@sfml-dev.org)
+// Copyright (C) 2013 Jonathan De Wachter (dewachter.jonathan@gmail.com)
 //
 // This software is provided 'as-is', without any express or implied warranty.
 // In no event will the authors be held liable for any damages arising from the use of this software.
@@ -22,38 +22,34 @@
 //
 ////////////////////////////////////////////////////////////
 
-#pragma once
-
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Config.hpp>
+#include <SFML/Window/VideoModeImpl.hpp>
 
-#include <SFML/Window/Sensor.hpp>
+#include <SFML/System/Sleep.hpp>
+#include <SFML/System/Vector2.hpp>
 
-#if defined(SFML_SYSTEM_WINDOWS)
+#include "TFT_eSPI.h"
 
-#include <SFML/Window/Win32/SensorImpl.hpp>
+#include <mutex>
 
-#elif defined(SFML_SYSTEM_LINUX) || defined(SFML_SYSTEM_FREEBSD) || defined(SFML_SYSTEM_OPENBSD) || \
-    defined(SFML_SYSTEM_NETBSD)
+namespace sf::priv
+{
+////////////////////////////////////////////////////////////
+std::vector<VideoMode> VideoModeImpl::getFullscreenModes()
+{
+    return std::vector<VideoMode>{
+        VideoMode({TFT_HEIGHT, TFT_WIDTH}),
+        VideoMode({TFT_WIDTH, TFT_HEIGHT})
+    };
+}
 
-#include <SFML/Window/Unix/SensorImpl.hpp>
 
-#elif defined(SFML_SYSTEM_MACOS)
+////////////////////////////////////////////////////////////
+VideoMode VideoModeImpl::getDesktopMode()
+{
+    return VideoMode({TFT_HEIGHT, TFT_WIDTH});
+}
 
-#include <SFML/Window/macOS/SensorImpl.hpp>
-
-#elif defined(SFML_SYSTEM_IOS)
-
-#include <SFML/Window/iOS/SensorImpl.hpp>
-
-#elif defined(SFML_SYSTEM_ANDROID)
-
-#include <SFML/Window/Android/SensorImpl.hpp>
-
-#elif defined(SFML_SYSTEM_ESP32)
-
-#include <SFML/Window/ESP32/SensorImpl.hpp>
-
-#endif
+} // namespace sf::priv
