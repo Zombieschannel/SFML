@@ -31,12 +31,16 @@
 
 #include <SFML/System/Err.hpp>
 
+#ifdef SFML_SYSTEM_ESP32
+#include "GLES.h"
+#else
 // We check for this definition in order to avoid multiple definitions of GLAD
 // entities during unity builds of SFML.
 #ifndef SF_GLAD_GL_IMPLEMENTATION_INCLUDED
 #define SF_GLAD_GL_IMPLEMENTATION_INCLUDED
 #define SF_GLAD_GL_IMPLEMENTATION
 #include <glad/gl.h>
+#endif
 #endif
 
 #include <ostream>
@@ -93,11 +97,12 @@ void ensureExtensionsInit()
     if (!initialized)
     {
         initialized = true;
-
+#ifndef SFML_SYSTEM_ESP32
 #ifdef SFML_OPENGL_ES
         gladLoadGLES1(Context::getFunction);
 #else
         gladLoadGL(Context::getFunction);
+#endif
 #endif
         // Some GL implementations don't fully follow extension specifications
         // and advertise support for extensions although not providing the

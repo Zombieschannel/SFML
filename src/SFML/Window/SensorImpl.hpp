@@ -52,4 +52,8 @@
 
 #include <SFML/Window/Android/SensorImpl.hpp>
 
+#elif defined(SFML_SYSTEM_ESP32)
+
+#include <SFML/Window/ESP32/SensorImpl.hpp>
+
 #endif

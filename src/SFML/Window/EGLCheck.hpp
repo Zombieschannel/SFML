@@ -31,7 +31,12 @@
 
 #include <SFML/System/Err.hpp>
 
+
+#ifdef SFML_SYSTEM_ESP32
+#include "EGL.h"
+#else
 #include <glad/egl.h>
+#endif
 
 #include <ostream>
 #include <string_view>

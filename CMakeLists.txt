@@ -8,6 +8,99 @@ else()
     cmake_minimum_required(VERSION 3.22)
 endif()
 
+if (ESP_PLATFORM)
+    idf_component_register(SRCS
+                        "src/SFML/System/Clock.cpp"
+                        "src/SFML/System/Err.cpp"
+                        "src/SFML/System/Sleep.cpp"
+                        "src/SFML/System/String.cpp"
+                        "src/SFML/System/Utils.cpp"
+                        "src/SFML/System/Vector2.cpp"
+                        "src/SFML/System/Vector3.cpp"
+                        "src/SFML/System/FileInputStream.cpp"
+                        "src/SFML/System/MemoryInputStream.cpp"
+                        "src/SFML/System/ESP32/SleepImpl.cpp"
+
+                        "src/SFML/Window/Clipboard.cpp"
+                        "src/SFML/Window/Context.cpp"
+                        "src/SFML/Window/Cursor.cpp"
+                        "src/SFML/Window/EGLCheck.cpp"
+                        "src/SFML/Window/EglContext.cpp"
+                        "src/SFML/Window/GlContext.cpp"
+                        "src/SFML/Window/GlResource.cpp"
+                        "src/SFML/Window/Joystick.cpp"
+                        "src/SFML/Window/JoystickManager.cpp"
+                        "src/SFML/Window/Keyboard.cpp"
+                        "src/SFML/Window/Mouse.cpp"
+                        "src/SFML/Window/Touch.cpp"
+                        "src/SFML/Window/Sensor.cpp"
+                        "src/SFML/Window/SensorManager.cpp"
+                        "src/SFML/Window/VideoMode.cpp"
+                        "src/SFML/Window/Vulkan.cpp"
+                        "src/SFML/Window/Window.cpp"
+                        "src/SFML/Window/WindowBase.cpp"
+                        "src/SFML/Window/WindowImpl.cpp"
+
+                        "src/SFML/Window/ESP32/ClipboardImpl.cpp"
+                        "src/SFML/Window/ESP32/CursorImpl.cpp"
+                        "src/SFML/Window/ESP32/InputImpl.cpp"
+                        "src/SFML/Window/ESP32/JoystickImpl.cpp"
+                        "src/SFML/Window/ESP32/SensorImpl.cpp"
+                        "src/SFML/Window/ESP32/VideoModeImpl.cpp"
+                        "src/SFML/Window/ESP32/WindowImplESP32.cpp"
+
+                        "src/SFML/Graphics/BlendMode.cpp"
+                        "src/SFML/Graphics/CircleShape.cpp"
+                        "src/SFML/Graphics/ConvexShape.cpp"
+                        "src/SFML/Graphics/Font.cpp"
+                        "src/SFML/Graphics/GLCheck.cpp"
+                        "src/SFML/Graphics/GLExtensions.cpp"
+                        "src/SFML/Graphics/Glsl.cpp"
+                        "src/SFML/Graphics/Image.cpp"
+                        "src/SFML/Graphics/RectangleShape.cpp"
+                        "src/SFML/Graphics/RenderStates.cpp"
+                        "src/SFML/Graphics/RenderTarget.cpp"
+                        "src/SFML/Graphics/RenderTexture.cpp"
+                        "src/SFML/Graphics/RenderTextureImplDefault.cpp"
+                        "src/SFML/Graphics/RenderTextureImplFBO.cpp"
+                        "src/SFML/Graphics/RenderWindow.cpp"
+                        "src/SFML/Graphics/Shader.cpp"
+                        "src/SFML/Graphics/Shape.cpp"
+                        "src/SFML/Graphics/Sprite.cpp"
+                        "src/SFML/Graphics/StencilMode.cpp"
+                        "src/SFML/Graphics/Text.cpp"
+                        "src/SFML/Graphics/Texture.cpp"
+                        "src/SFML/Graphics/TextureSaver.cpp"
+                        "src/SFML/Graphics/Transformable.cpp"
+                        "src/SFML/Graphics/Transform.cpp"
+                        "src/SFML/Graphics/VertexArray.cpp"
+                        "src/SFML/Graphics/VertexBuffer.cpp"
+                        "src/SFML/Graphics/View.cpp"
+
+                        "src/SFML/Network/Ftp.cpp"
+                        "src/SFML/Network/Http.cpp"
+                        "src/SFML/Network/IpAddress.cpp"
+                        "src/SFML/Network/Packet.cpp"
+                        "src/SFML/Network/Socket.cpp"
+                        "src/SFML/Network/SocketSelector.cpp"
+                        "src/SFML/Network/TcpListener.cpp"
+                        "src/SFML/Network/TcpSocket.cpp"
+                        "src/SFML/Network/UdpSocket.cpp"
+
+                        "src/SFML/Network/Unix/SocketImpl.cpp"
+                        
+                        "src/SFML/Main/MainESP32.cpp"
+
+                        INCLUDE_DIRS 
+                        "include"
+                        "src"
+                        "extlibs/headers/stb_image"
+                        REQUIRES arduino TFT_eSPI ESP32_GLES1 freetype)
+    target_link_libraries(${COMPONENT_LIB} PRIVATE "-u main")
+    return()
+endif()
+
+
 # define a macro that helps defining an option
 macro(sfml_set_option var default type docstring)
     if(NOT DEFINED ${var})

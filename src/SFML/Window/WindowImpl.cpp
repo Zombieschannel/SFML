@@ -89,6 +89,13 @@ using WindowImplType = sf::priv::WindowImplAndroid;
 
 #define SFML_VULKAN_IMPLEMENTATION_NOT_AVAILABLE
 
+#elif defined(SFML_SYSTEM_ESP32)
+
+#include <SFML/Window/ESP32/WindowImplESP32.hpp>
+using WindowImplType = sf::priv::WindowImplESP32;
+
+#define SFML_VULKAN_IMPLEMENTATION_NOT_AVAILABLE
+
 #endif
 
 

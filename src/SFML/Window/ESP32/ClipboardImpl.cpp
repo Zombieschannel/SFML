@@ -22,28 +22,31 @@
 //
 ////////////////////////////////////////////////////////////
 
-#pragma once
-
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Config.hpp>
+#include <SFML/Window/ESP32/ClipboardImpl.hpp>
 
-#if defined(SFML_SYSTEM_WINDOWS)
-#include <SFML/Window/Win32/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_LINUX) || defined(SFML_SYSTEM_FREEBSD) || defined(SFML_SYSTEM_OPENBSD) || \
-    defined(SFML_SYSTEM_NETBSD)
-#if defined(SFML_USE_DRM)
-#include <SFML/Window/DRM/CursorImpl.hpp>
-#else
-#include <SFML/Window/Unix/CursorImpl.hpp>
-#endif
-#elif defined(SFML_SYSTEM_MACOS)
-#include <SFML/Window/macOS/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_IOS)
-#include <SFML/Window/iOS/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_ANDROID)
-#include <SFML/Window/Android/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_ESP32)
-#include <SFML/Window/ESP32/CursorImpl.hpp>
-#endif
+#include <SFML/System/Err.hpp>
+#include <SFML/System/String.hpp>
+
+#include <ostream>
+
+
+namespace sf::priv
+{
+////////////////////////////////////////////////////////////
+String ClipboardImpl::getString()
+{
+    err() << "Clipboard API not implemented for ESP32.\n";
+    return {};
+}
+
+
+////////////////////////////////////////////////////////////
+void ClipboardImpl::setString(const String& /* text */)
+{
+    err() << "Clipboard API not implemented for ESP32.\n";
+}
+
+} // namespace sf::priv

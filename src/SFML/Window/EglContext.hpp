@@ -33,7 +33,12 @@
 #include <SFML/Window/VideoMode.hpp>
 #include <SFML/Window/WindowEnums.hpp> // Prevent conflict with macro None from Xlib
 
+#ifdef SFML_SYSTEM_ESP32
+#include "EGL.h"
+#else
 #include <glad/egl.h>
+#endif
+
 #if defined(SFML_SYSTEM_LINUX) && !defined(SFML_USE_DRM)
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

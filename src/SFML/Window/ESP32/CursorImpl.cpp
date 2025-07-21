@@ -22,28 +22,27 @@
 //
 ////////////////////////////////////////////////////////////
 
-#pragma once
-
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#include <SFML/Config.hpp>
-
-#if defined(SFML_SYSTEM_WINDOWS)
-#include <SFML/Window/Win32/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_LINUX) || defined(SFML_SYSTEM_FREEBSD) || defined(SFML_SYSTEM_OPENBSD) || \
-    defined(SFML_SYSTEM_NETBSD)
-#if defined(SFML_USE_DRM)
-#include <SFML/Window/DRM/CursorImpl.hpp>
-#else
-#include <SFML/Window/Unix/CursorImpl.hpp>
-#endif
-#elif defined(SFML_SYSTEM_MACOS)
-#include <SFML/Window/macOS/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_IOS)
-#include <SFML/Window/iOS/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_ANDROID)
-#include <SFML/Window/Android/CursorImpl.hpp>
-#elif defined(SFML_SYSTEM_ESP32)
 #include <SFML/Window/ESP32/CursorImpl.hpp>
-#endif
+
+namespace sf::priv
+{
+////////////////////////////////////////////////////////////
+bool CursorImpl::loadFromPixels(const std::uint8_t* /* pixels */, Vector2u /* size */, Vector2u /* hotspot */)
+{
+    // Not supported
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////
+bool CursorImpl::loadFromSystem(Cursor::Type /* type */)
+{
+    // Not supported
+    return false;
+}
+
+
+} // namespace sf::priv

@@ -560,7 +560,7 @@ Packet& Packet::operator<<(const String& data)
     // Then insert characters
     if (length > 0)
     {
-        for (const unsigned int datum : data)
+        for (const std::uint32_t datum : data)
             *this << datum;
     }
 
