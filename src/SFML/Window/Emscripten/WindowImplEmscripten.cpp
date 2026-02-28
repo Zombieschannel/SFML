@@ -1354,10 +1354,10 @@ JoystickState JoystickImpl::update()
         state.axes[Joystick::Axis::U]    = static_cast<float>(gamepadEvent.axis[3] * 100.0);
         state.axes[Joystick::Axis::PovX] = static_cast<float>((gamepadEvent.analogButton[15] - gamepadEvent.analogButton[14]) * 100.0);
         state.axes[Joystick::Axis::PovY] = static_cast<float>((gamepadEvent.analogButton[13] - gamepadEvent.analogButton[12]) * 100.0);
-        gamepadEvent.digitalButton[12]   = false;
-        gamepadEvent.digitalButton[13]   = false;
-        gamepadEvent.digitalButton[14]   = false;
-        gamepadEvent.digitalButton[15]   = false;
+        state.buttons[12] = false;
+        state.buttons[13] = false;
+        state.buttons[14] = false;
+        state.buttons[15] = false;
     }
     state.connected = gamepadEvent.connected;
 
