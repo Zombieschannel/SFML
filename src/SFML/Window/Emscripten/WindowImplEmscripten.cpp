@@ -1292,10 +1292,10 @@ JoystickCaps JoystickImpl::getCapabilities() const
     {
         caps.axes[Joystick::Axis::X]    = true;
         caps.axes[Joystick::Axis::Y]    = true;
-        caps.axes[Joystick::Axis::Z]    = false;
+        caps.axes[Joystick::Axis::Z]    = true;
         caps.axes[Joystick::Axis::R]    = true;
         caps.axes[Joystick::Axis::U]    = true;
-        caps.axes[Joystick::Axis::V]    = false;
+        caps.axes[Joystick::Axis::V]    = true;
         caps.axes[Joystick::Axis::PovX] = true;
         caps.axes[Joystick::Axis::PovY] = true;
     }
@@ -1350,8 +1350,10 @@ JoystickState JoystickImpl::update()
     {
         state.axes[Joystick::Axis::X]    = static_cast<float>(gamepadEvent.axis[0] * 100.0);
         state.axes[Joystick::Axis::Y]    = static_cast<float>(gamepadEvent.axis[1] * 100.0);
-        state.axes[Joystick::Axis::R]    = static_cast<float>(gamepadEvent.axis[2] * 100.0);
-        state.axes[Joystick::Axis::U]    = static_cast<float>(gamepadEvent.axis[3] * 100.0);
+        state.axes[Joystick::Axis::U]    = static_cast<float>(gamepadEvent.axis[2] * 100.0);
+        state.axes[Joystick::Axis::V]    = static_cast<float>(gamepadEvent.axis[3] * 100.0);
+        state.axes[Joystick::Axis::Z]    = static_cast<float>(gamepadEvent.axis[4] * 100.0);
+        state.axes[Joystick::Axis::R]    = static_cast<float>(gamepadEvent.axis[5] * 100.0);
         state.axes[Joystick::Axis::PovX] = static_cast<float>((gamepadEvent.analogButton[15] - gamepadEvent.analogButton[14]) * 100.0);
         state.axes[Joystick::Axis::PovY] = static_cast<float>((gamepadEvent.analogButton[13] - gamepadEvent.analogButton[12]) * 100.0);
         state.buttons[12] = false;
