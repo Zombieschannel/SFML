@@ -1041,11 +1041,23 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         usedShader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix));
         // Defines an uniform that allows shaders to scale its texcoords depending on their size and not on their actual size
         if (states.texture->m_actualSize.x != 0 && states.texture->m_actualSize.y != 0) {
-            GLfloat factor_npot[2] = {
-                static_cast<GLfloat>(states.texture->m_size.x) / states.texture->m_actualSize.x,
-                static_cast<GLfloat>(states.texture->m_size.y) / states.texture->m_actualSize.y
-            };
+            const auto actualW = static_cast<GLfloat>(states.texture->m_actualSize.x);
+            const auto actualH = static_cast<GLfloat>(states.texture->m_actualSize.y);
+            GLfloat factor_npot[2];
+            if (states.texture->m_isRepeated)
+            {
+                // Wrap at the logical image boundary (edge between last real texel and padding).
+                factor_npot[0] = static_cast<GLfloat>(states.texture->m_size.x) / actualW;
+                factor_npot[1] = static_cast<GLfloat>(states.texture->m_size.y) / actualH;
+            }
+            else
+            {
+                // Clamp to the center of the last real texel to avoid sampling padding pixels.
+                factor_npot[0] = (static_cast<GLfloat>(states.texture->m_size.x) - 0.5f) / actualW;
+                factor_npot[1] = (static_cast<GLfloat>(states.texture->m_size.y) - 0.5f) / actualH;
+            }
             usedShader->setUniform("factor_npot", Glsl::Vec2(factor_npot[0], factor_npot[1]));
+            usedShader->setUniform("sf_repeated", states.texture->m_isRepeated ? 1.0f : 0.0f);
         }
     }
 
