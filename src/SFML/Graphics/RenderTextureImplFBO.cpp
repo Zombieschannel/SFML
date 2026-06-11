@@ -124,7 +124,7 @@ unsigned int RenderTextureImplFBO::getMaximumAntiAliasingLevel()
 
     const TransientContextLock lock;
     GLint                      samples = 0;
-    glCheck(glGetIntegerv(GLEXT_GL_MAX_SAMPLES, &samples));
+    glCheck(glGetIntegerv(GL_MAX_SAMPLES, &samples));
     return static_cast<unsigned int>(samples);
 
 #endif
@@ -150,16 +150,13 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
         // Make sure that extensions are initialized
         ensureExtensionsInit();
 
-        if (settings.antiAliasingLevel && !(GLEXT_framebuffer_multisample && GLEXT_framebuffer_blit))
-            return false;
-
         m_sRgb = settings.sRgbCapable;
 
         // Check if the requested anti-aliasing level is supported
         if (settings.antiAliasingLevel)
         {
             GLint samples = 0;
-            glCheck(glGetIntegerv(GLEXT_GL_MAX_SAMPLES, &samples));
+            glCheck(glGetIntegerv(GL_MAX_SAMPLES, &samples));
 
             if (settings.antiAliasingLevel > static_cast<unsigned int>(samples))
             {
@@ -186,7 +183,7 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
                 }
                 glCheck(glBindRenderbuffer(GL_RENDERBUFFER, m_depthStencilBuffer));
                 glCheck(glRenderbufferStorage(GL_RENDERBUFFER,
-                                                GLEXT_GL_DEPTH24_STENCIL8,
+                                                GL_DEPTH24_STENCIL8,
                                                 static_cast<GLsizei>(size.x),
                                                 static_cast<GLsizei>(size.y)));
 
@@ -248,7 +245,7 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
                 return false;
             }
             glCheck(glBindRenderbuffer(GL_RENDERBUFFER, m_colorBuffer));
-            glCheck(GLEXT_glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+            glCheck(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
                                                            static_cast<GLsizei>(settings.antiAliasingLevel),
                                                            m_sRgb ? GL_SRGB8_ALPHA8 : GL_RGBA,
                                                            static_cast<GLsizei>(size.x),
@@ -270,7 +267,7 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
                 glCheck(glBindRenderbuffer(GL_RENDERBUFFER, m_depthStencilBuffer));
                 glCheck(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
                                                             static_cast<GLsizei>(settings.antiAliasingLevel),
-                                                            GLEXT_GL_DEPTH24_STENCIL8,
+                                                            GL_DEPTH24_STENCIL8,
                                                             static_cast<GLsizei>(size.x),
                                                             static_cast<GLsizei>(size.y)));
 
@@ -290,7 +287,7 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
                     return false;
                 }
                 glCheck(glBindRenderbuffer(GL_RENDERBUFFER, m_depthStencilBuffer));
-                glCheck(GLEXT_glRenderbufferStorageMultisample(GL_RENDERBUFFER,
+                glCheck(glRenderbufferStorageMultisample(GL_RENDERBUFFER,
                                                                static_cast<GLsizei>(settings.antiAliasingLevel),
                                                                GL_DEPTH_COMPONENT,
                                                                static_cast<GLsizei>(size.x),
@@ -334,40 +331,21 @@ bool RenderTextureImplFBO::create(Vector2u size, unsigned int textureId, const C
     if (!Context::getActiveContextId())
         return true;
 
-#ifndef SFML_OPENGL_ES
-
     // Save the current bindings so we can restore them after we are done
     GLint readFramebuffer = 0;
     GLint drawFramebuffer = 0;
 
-    glCheck(glGetIntegerv(GLEXT_GL_READ_FRAMEBUFFER_BINDING, &readFramebuffer));
-    glCheck(glGetIntegerv(GLEXT_GL_DRAW_FRAMEBUFFER_BINDING, &drawFramebuffer));
+    glCheck(glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFramebuffer));
+    glCheck(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFramebuffer));
 
     if (createFrameBuffer())
     {
         // Restore previously bound framebuffers
-        glCheck(glBindFramebuffer(GLEXT_GL_READ_FRAMEBUFFER, static_cast<GLuint>(readFramebuffer)));
-        glCheck(glBindFramebuffer(GLEXT_GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(drawFramebuffer)));
+        glCheck(glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(readFramebuffer)));
+        glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(drawFramebuffer)));
 
         return true;
     }
-
-#else
-
-    // Save the current binding so we can restore them after we are done
-    GLint frameBuffer = 0;
-
-    glCheck(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &frameBuffer));
-
-    if (createFrameBuffer())
-    {
-        // Restore previously bound framebuffer
-        glCheck(glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(frameBuffer)));
-
-        return true;
-    }
-
-#endif
 
     return false;
 }
@@ -570,8 +548,6 @@ void RenderTextureImplFBO::updateTexture(unsigned int)
     // from our FBO with multisample renderbuffer attachments
     // to our FBO to which our target texture is attached
 
-#ifndef SFML_OPENGL_ES
-
     // In case of multisampling, make sure both FBOs
     // are already available within the current context
     if (m_multisample && m_size.x && m_size.y && activate(true))
@@ -597,18 +573,18 @@ void RenderTextureImplFBO::updateTexture(unsigned int)
                     glCheck(glDisable(GL_SCISSOR_TEST));
 
                 // Set up the blit target (draw framebuffer) and blit (from the read framebuffer, our multisample FBO)
-                glCheck(glBindFramebuffer(GLEXT_GL_DRAW_FRAMEBUFFER, frameBuffer->object));
-                glCheck(GLEXT_glBlitFramebuffer(0,
-                                                0,
-                                                static_cast<GLint>(m_size.x),
-                                                static_cast<GLint>(m_size.y),
-                                                0,
-                                                0,
-                                                static_cast<GLint>(m_size.x),
-                                                static_cast<GLint>(m_size.y),
-                                                GL_COLOR_BUFFER_BIT,
-                                                GL_NEAREST));
-                glCheck(glBindFramebuffer(GLEXT_GL_DRAW_FRAMEBUFFER, multiSampleFrameBuffer->object));
+                glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBuffer->object));
+                glCheck(glBlitFramebuffer(0,
+                                          0,
+                                          static_cast<GLint>(m_size.x),
+                                          static_cast<GLint>(m_size.y),
+                                          0,
+                                          0,
+                                          static_cast<GLint>(m_size.x),
+                                          static_cast<GLint>(m_size.y),
+                                          GL_COLOR_BUFFER_BIT,
+                                          GL_NEAREST));
+                glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, multiSampleFrameBuffer->object));
 
                 // Re-enable scissor testing if it was previously enabled
                 if (scissorEnabled == GL_TRUE)
@@ -616,8 +592,6 @@ void RenderTextureImplFBO::updateTexture(unsigned int)
             }
         }
     }
-
-#endif // SFML_OPENGL_ES
 }
 
 } // namespace sf::priv

@@ -122,13 +122,9 @@ std::uint32_t equationToGlConstant(sf::BlendMode::Equation blendEquation)
         case sf::BlendMode::Equation::ReverseSubtract:
             return GL_FUNC_REVERSE_SUBTRACT;
         case sf::BlendMode::Equation::Min:
-            if (GLEXT_blend_minmax)
-                return GLEXT_GL_MIN;
-            break;
+            return GL_MIN;
         case sf::BlendMode::Equation::Max:
-            if (GLEXT_blend_minmax)
-                return GLEXT_GL_MAX;
-            break;
+            return GL_MAX;
     }
 
     static bool warned = false;
@@ -201,11 +197,8 @@ RenderTarget::~RenderTarget()
         if (m_cache.defaultBuffer)
             glCheck(glDeleteBuffers(1, &m_cache.defaultBuffer));
 
-#ifndef SFML_OPENGL_ES
-        if (!m_cache.defaultArray)
+        if (m_cache.defaultArray)
             glCheck(glDeleteVertexArrays(1, &m_cache.defaultArray));
-#endif
-
     }
 }
 
@@ -369,11 +362,7 @@ void RenderTarget::draw(const Vertex* vertices, std::size_t vertexCount, Primiti
             }
         }
 
-#ifndef SFML_OPENGL_ES
-
         glCheck(glBindVertexArray(m_cache.defaultArray));
-
-#endif
 
         setupDraw(useVertexCache, states);
 
@@ -451,12 +440,7 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
 
     if (RenderTargetImpl::isActive(m_id) || setActive(true))
     {
-
-#ifndef SFML_OPENGL_ES
-
         glCheck(glBindVertexArray(m_cache.defaultArray));
-
-#endif
 
         setupDraw(false, states);
 
@@ -479,11 +463,7 @@ void RenderTarget::draw(const VertexBuffer& vertexBuffer, std::size_t firstVerte
         // Unbind vertex buffer
         VertexBuffer::bind(nullptr);
 
-#ifndef SFML_OPENGL_ES
-
         glCheck(glBindVertexArray(0));
-
-#endif
 
         cleanupDraw(states);
 
@@ -640,13 +620,9 @@ void RenderTarget::initialize()
     m_defaultView = View(FloatRect({0, 0}, Vector2f(getSize())));
     m_view        = m_defaultView;
 
-#ifndef SFML_OPENGL_ES
-
     if (m_cache.defaultArray)
         glCheck(glDeleteVertexArrays(1, &m_cache.defaultArray));
     glCheck(glGenVertexArrays(1, &m_cache.defaultArray));
-
-#endif
 
     if (m_cache.defaultBuffer)
         glCheck(glDeleteBuffers(1, &m_cache.defaultBuffer));
@@ -931,14 +907,6 @@ void RenderTarget::setupDraw(bool useVertexCache, const RenderStates& states)
         else
         {
             usedShader->setUniform("sf_texture", static_cast<Glsl::Mat4>(matrix.data()));
-        }
-        // Defines an uniform that allows shaders to scale its texcoords depending on their size and not on their actual size
-        if (states.texture->m_actualSize.x != 0 && states.texture->m_actualSize.y != 0) {
-            GLfloat factor_npot[2] = {
-                static_cast<GLfloat>(states.texture->m_size.x) / static_cast<GLfloat>(states.texture->m_actualSize.x),
-                static_cast<GLfloat>(states.texture->m_size.y) / static_cast<GLfloat>(states.texture->m_actualSize.y)
-            };
-            usedShader->setUniform("factor_npot", Glsl::Vec2(factor_npot[0], factor_npot[1]));
         }
     }
 

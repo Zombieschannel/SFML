@@ -281,29 +281,7 @@ bool Texture::resize(Vector2u size, bool sRgb)
     // Make sure that the current texture binding will be preserved
     const priv::TextureSaver save;
 
-    static const bool textureSrgb = GLEXT_texture_sRGB;
-
     m_sRgb = sRgb;
-
-    if (m_sRgb && !textureSrgb)
-    {
-        static bool warned = false;
-
-        if (!warned)
-        {
-#ifndef SFML_OPENGL_ES
-            err() << "OpenGL extension EXT_texture_sRGB unavailable" << '\n';
-#else
-            err() << "OpenGL ES extension EXT_sRGB unavailable" << '\n';
-#endif
-            err() << "Automatic sRGB to linear conversion disabled" << std::endl;
-
-            warned = true;
-        }
-
-        m_sRgb = false;
-    }
-
 
     const GLint textureWrapParam = m_isRepeated ? GL_REPEAT : GL_CLAMP_TO_EDGE;
 
@@ -590,8 +568,6 @@ void Texture::update(const Texture& texture, Vector2u dest)
     if (!m_texture || !texture.m_texture)
         return;
 
-#ifndef SFML_OPENGL_ES
-
     {
         const TransientContextLock lock;
 
@@ -599,105 +575,96 @@ void Texture::update(const Texture& texture, Vector2u dest)
         priv::ensureExtensionsInit();
     }
 
-    if (GLEXT_framebuffer_blit)
+    const TransientContextLock lock;
+
+    // Save the current bindings so we can restore them after we are done
+    GLint readFramebuffer = 0;
+    GLint drawFramebuffer = 0;
+
+    glCheck(glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFramebuffer));
+    glCheck(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFramebuffer));
+
+    // Create the framebuffers
+    GLuint sourceFrameBuffer = 0;
+    GLuint destFrameBuffer   = 0;
+    glCheck(glGenFramebuffers(1, &sourceFrameBuffer));
+    glCheck(glGenFramebuffers(1, &destFrameBuffer));
+
+    if (!sourceFrameBuffer || !destFrameBuffer)
     {
-        const TransientContextLock lock;
-
-        // Save the current bindings so we can restore them after we are done
-        GLint readFramebuffer = 0;
-        GLint drawFramebuffer = 0;
-
-        glCheck(glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFramebuffer));
-        glCheck(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFramebuffer));
-
-        // Create the framebuffers
-        GLuint sourceFrameBuffer = 0;
-        GLuint destFrameBuffer   = 0;
-        glCheck(glGenFramebuffers(1, &sourceFrameBuffer));
-        glCheck(glGenFramebuffers(1, &destFrameBuffer));
-
-        if (!sourceFrameBuffer || !destFrameBuffer)
-        {
-            err() << "Cannot copy texture, failed to create a frame buffer object" << std::endl;
-            return;
-        }
-
-        // Link the source texture to the source frame buffer
-        glCheck(glBindFramebuffer(GL_READ_FRAMEBUFFER, sourceFrameBuffer));
-        glCheck(glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
-                                             GL_COLOR_ATTACHMENT0,
-                                             GL_TEXTURE_2D,
-                                             texture.m_texture,
-                                             0));
-
-        // Link the destination texture to the destination frame buffer
-        glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, destFrameBuffer));
-        glCheck(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0));
-
-        // A final check, just to be sure...
-        const GLenum sourceStatus = glCheck(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER));
-
-        const GLenum destStatus = glCheck(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
-
-        if ((sourceStatus == GL_FRAMEBUFFER_COMPLETE) && (destStatus == GL_FRAMEBUFFER_COMPLETE))
-        {
-            // Scissor testing affects framebuffer blits as well
-            // Since we don't want scissor testing to interfere with our copying, we temporarily disable it for the blit if it is enabled
-            GLboolean scissorEnabled = GL_FALSE;
-            glCheck(glGetBooleanv(GL_SCISSOR_TEST, &scissorEnabled));
-
-            if (scissorEnabled == GL_TRUE)
-                glCheck(glDisable(GL_SCISSOR_TEST));
-
-            // Blit the texture contents from the source to the destination texture
-            glCheck(GLEXT_glBlitFramebuffer(0,
-                                        texture.m_pixelsFlipped ? static_cast<GLint>(texture.m_size.y) : 0,
-                                        static_cast<GLint>(texture.m_size.x),
-                                        texture.m_pixelsFlipped ? 0 : static_cast<GLint>(texture.m_size.y), // Source rectangle, flip y if source is flipped
-                                        static_cast<GLint>(dest.x),
-                                        static_cast<GLint>(dest.y),
-                                        static_cast<GLint>(dest.x + texture.m_size.x),
-                                        static_cast<GLint>(dest.y + texture.m_size.y), // Destination rectangle
-                                        GL_COLOR_BUFFER_BIT,
-                                        GL_NEAREST));
-
-            // Re-enable scissor testing if it was previously enabled
-            if (scissorEnabled == GL_TRUE)
-                glCheck(glEnable(GL_SCISSOR_TEST));
-        }
-        else
-        {
-            err() << "Cannot copy texture, failed to link texture to frame buffer" << std::endl;
-        }
-
-        // Restore previously bound framebuffers
-        glCheck(glBindFramebuffer(GLEXT_GL_READ_FRAMEBUFFER, static_cast<GLuint>(readFramebuffer)));
-        glCheck(glBindFramebuffer(GLEXT_GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(drawFramebuffer)));
-
-        // Delete the framebuffers
-        glCheck(glDeleteFramebuffers(1, &sourceFrameBuffer));
-        glCheck(glDeleteFramebuffers(1, &destFrameBuffer));
-
-        // Make sure that the current texture binding will be preserved
-        const priv::TextureSaver save;
-
-        // Set the parameters of this texture
-        glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
-        glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_isSmooth ? GL_LINEAR : GL_NEAREST));
-        m_hasMipmap     = false;
-        m_pixelsFlipped = false;
-        m_cacheId       = TextureImpl::getUniqueId();
-
-        // Force an OpenGL flush, so that the texture data will appear updated
-        // in all contexts immediately (solves problems in multi-threaded apps)
-        glCheck(glFlush());
-
+        err() << "Cannot copy texture, failed to create a frame buffer object" << std::endl;
         return;
     }
 
-#endif // SFML_OPENGL_ES
+    // Link the source texture to the source frame buffer
+    glCheck(glBindFramebuffer(GL_READ_FRAMEBUFFER, sourceFrameBuffer));
+    glCheck(glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
+                                            GL_COLOR_ATTACHMENT0,
+                                            GL_TEXTURE_2D,
+                                            texture.m_texture,
+                                            0));
 
-    update(texture.copyToImage(), dest);
+    // Link the destination texture to the destination frame buffer
+    glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, destFrameBuffer));
+    glCheck(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0));
+
+    // A final check, just to be sure...
+    const GLenum sourceStatus = glCheck(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER));
+
+    const GLenum destStatus = glCheck(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
+
+    if ((sourceStatus == GL_FRAMEBUFFER_COMPLETE) && (destStatus == GL_FRAMEBUFFER_COMPLETE))
+    {
+        // Scissor testing affects framebuffer blits as well
+        // Since we don't want scissor testing to interfere with our copying, we temporarily disable it for the blit if it is enabled
+        GLboolean scissorEnabled = GL_FALSE;
+        glCheck(glGetBooleanv(GL_SCISSOR_TEST, &scissorEnabled));
+
+        if (scissorEnabled == GL_TRUE)
+            glCheck(glDisable(GL_SCISSOR_TEST));
+
+        // Blit the texture contents from the source to the destination texture
+        glCheck(glBlitFramebuffer(0,
+                                    texture.m_pixelsFlipped ? static_cast<GLint>(texture.m_size.y) : 0,
+                                    static_cast<GLint>(texture.m_size.x),
+                                    texture.m_pixelsFlipped ? 0 : static_cast<GLint>(texture.m_size.y), // Source rectangle, flip y if source is flipped
+                                    static_cast<GLint>(dest.x),
+                                    static_cast<GLint>(dest.y),
+                                    static_cast<GLint>(dest.x + texture.m_size.x),
+                                    static_cast<GLint>(dest.y + texture.m_size.y), // Destination rectangle
+                                    GL_COLOR_BUFFER_BIT,
+                                    GL_NEAREST));
+
+        // Re-enable scissor testing if it was previously enabled
+        if (scissorEnabled == GL_TRUE)
+            glCheck(glEnable(GL_SCISSOR_TEST));
+    }
+    else
+    {
+        err() << "Cannot copy texture, failed to link texture to frame buffer" << std::endl;
+    }
+
+    // Restore previously bound framebuffers
+    glCheck(glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(readFramebuffer)));
+    glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(drawFramebuffer)));
+
+    // Delete the framebuffers
+    glCheck(glDeleteFramebuffers(1, &sourceFrameBuffer));
+    glCheck(glDeleteFramebuffers(1, &destFrameBuffer));
+
+    // Make sure that the current texture binding will be preserved
+    const priv::TextureSaver save;
+
+    // Set the parameters of this texture
+    glCheck(glBindTexture(GL_TEXTURE_2D, m_texture));
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_isSmooth ? GL_LINEAR : GL_NEAREST));
+    m_hasMipmap     = false;
+    m_pixelsFlipped = false;
+    m_cacheId       = TextureImpl::getUniqueId();
+
+    // Force an OpenGL flush, so that the texture data will appear updated
+    // in all contexts immediately (solves problems in multi-threaded apps)
+    glCheck(glFlush());
 }
 
 

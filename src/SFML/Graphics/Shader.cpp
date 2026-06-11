@@ -848,16 +848,13 @@ const Shader& Shader::getDefaultShader()
     {
         static_cast<void>(instance.loadFromMemory(
 #ifdef SFML_OPENGL_ES
-            "#version 100\n"
-            "attribute vec2 position;"
-            "attribute vec4 color;"
-            "varying vec4 sf_color;"
+            "#version 300 es\n"
 #else
             "#version 330 core\n"
+#endif
             "in vec2 position;"
             "in vec4 color;"
             "out vec4 sf_color;"
-#endif
             "uniform mat4 sf_modelview;"
             "uniform mat4 sf_projection;"
             "void main()"
@@ -868,16 +865,16 @@ const Shader& Shader::getDefaultShader()
             "}",
 
 #ifdef SFML_OPENGL_ES
-            "#version 100\n"
+            "#version 300 es\n"
             "precision mediump float;"
-            "varying vec4 sf_color;"
 #else
             "#version 330 core\n"
-            "in vec4 sf_color;"
 #endif
+            "in vec4 sf_color;"
+            "out vec4 sf_outColor;"
             "void main()"
             "{"
-            "    gl_FragColor = sf_color;"
+            "    sf_outColor = sf_color;"
             "}"
         ));
         first = false;
@@ -897,20 +894,15 @@ const Shader& Shader::getDefaultTexShader()
     {
         static_cast<void>(instance.loadFromMemory(
 #ifdef SFML_OPENGL_ES
-            "#version 100\n"
-            "attribute vec2 position;"
-            "attribute vec4 color;"
-            "attribute vec2 texCoord;"
-            "varying vec4 sf_color;"
-            "varying vec2 sf_texCoord;"
+            "#version 300 es\n"
 #else
             "#version 330 core\n"
+#endif
             "in vec2 position;"
             "in vec4 color;"
             "in vec2 texCoord;"
             "out vec4 sf_color;"
             "out vec2 sf_texCoord;"
-#endif
             "uniform mat4 sf_modelview;"
             "uniform mat4 sf_projection;"
             "void main()"
@@ -922,23 +914,20 @@ const Shader& Shader::getDefaultTexShader()
             "}",
 
 #ifdef SFML_OPENGL_ES
-            "#version 100\n"
+            "#version 300 es\n"
             "precision mediump float;"
-            "varying vec4 sf_color;"
-            "varying vec2 sf_texCoord;"
 #else
             "#version 330 core\n"
+#endif
             "in vec4 sf_color;"
             "in vec2 sf_texCoord;"
-#endif
+            "out vec4 sf_outColor;"
             "uniform sampler2D sf_sampler;"
             "uniform mat4 sf_texture;"
-            "uniform vec2 factor_npot;"
             "void main()"
             "{"
             "    vec4 coord = sf_texture * vec4(sf_texCoord, 0.0, 1.0);"
-            "    coord.xy = mod(coord.xy, factor_npot.xy);"
-            "    gl_FragColor = texture2D(sf_sampler, coord.xy) * sf_color;"
+            "    sf_outColor = texture(sf_sampler, coord.xy) * sf_color;"
             "}"
         ));
         first = false;

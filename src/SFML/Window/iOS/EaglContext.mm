@@ -99,10 +99,10 @@ EaglContext::EaglContext(EaglContext* shared) : m_context(nil)
 
     // Create the context
     if (shared)
-        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2
+        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3
                                           sharegroup:[shared->m_context sharegroup]];
     else
-        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
 }
 
 
@@ -163,7 +163,7 @@ GlFunctionPointer EaglContext::getFunction(const char* name)
 {
     static void* module = nullptr;
 
-    static constexpr std::array libs = {"libGLESv2.dylib",
+    static constexpr std::array libs = {"libGLESv3.dylib",
                                         "/System/Library/Frameworks/OpenGLES.framework/OpenGLES",
                                         "OpenGLES.framework/OpenGLES"};
 
@@ -291,12 +291,12 @@ void EaglContext::createContext(EaglContext*           shared,
     {
         [EAGLContext setCurrentContext:nil];
 
-        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2
+        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3
                                           sharegroup:[shared->m_context sharegroup]];
     }
     else
     {
-        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+        m_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
     }
 
     // Activate it

@@ -238,7 +238,7 @@ void EglContext::setVerticalSyncEnabled(bool enabled)
 ////////////////////////////////////////////////////////////
 void EglContext::createContext(EglContext* shared)
 {
-    static constexpr std::array contextVersion = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+    static constexpr std::array contextVersion = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
 
     const EGLContext toShared = shared ? shared->m_context : EGL_NO_CONTEXT;
     if (toShared != EGL_NO_CONTEXT)
@@ -293,7 +293,7 @@ EGLConfig EglContext::getBestConfig(EGLDisplay display, unsigned int bitsPerPixe
         int renderableType = 0;
         eglCheck(eglGetConfigAttrib(display, configs[i], EGL_SURFACE_TYPE, &surfaceType));
         eglCheck(eglGetConfigAttrib(display, configs[i], EGL_RENDERABLE_TYPE, &renderableType));
-        if (!(surfaceType & (EGL_WINDOW_BIT | EGL_PBUFFER_BIT)) || !(renderableType & EGL_OPENGL_ES2_BIT))
+        if (!(surfaceType & (EGL_WINDOW_BIT | EGL_PBUFFER_BIT)) || !(renderableType & EGL_OPENGL_ES3_BIT))
             continue;
 
         // Extract the components of the current config

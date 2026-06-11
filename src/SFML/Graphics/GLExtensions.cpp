@@ -61,11 +61,7 @@ void extensionSanityCheck()
         if (!(entryPoints && ...))
             flag = 0;
     };
-#ifdef SFML_OPENGL_ES
-    check(GLEXT_EXT_blend_minmax_dependencies);
-#else
     (void)check;
-#endif
 }
 } // namespace
 
@@ -80,7 +76,7 @@ void ensureExtensionsInit()
         initialized = true;
 
 #ifdef SFML_OPENGL_ES
-        gladLoadGLES2(sf::Context::getFunction);
+        gladLoadGLES2(Context::getFunction);
 #else
         gladLoadGL(Context::getFunction);
 #endif
@@ -118,9 +114,9 @@ void ensureExtensionsInit()
             }
         }
 
-        if ((majorVersion < 1) || ((majorVersion == 1) && (minorVersion < 1)))
+        if ((majorVersion < 3) || ((majorVersion == 3) && (minorVersion < 3)))
         {
-            err() << "sfml-graphics requires support for OpenGL 1.1 or greater" << '\n'
+            err() << "sfml-graphics requires support for OpenGL 3.3 or greater" << '\n'
                   << "Ensure that hardware acceleration is enabled if available" << std::endl;
         }
     }
