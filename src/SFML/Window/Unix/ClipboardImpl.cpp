@@ -36,6 +36,7 @@
 
 #include <ostream>
 #include <vector>
+#include <fstream>
 
 
 namespace
@@ -65,6 +66,19 @@ void ClipboardImpl::setString(const String& text)
     getInstance().setStringImpl(text);
 }
 
+////////////////////////////////////////////////////////////
+std::vector<std::uint8_t> ClipboardImpl::getImage()
+{
+    return getInstance().getImageImpl();
+}
+
+
+////////////////////////////////////////////////////////////
+void ClipboardImpl::setImage(const std::vector<std::uint8_t>& data)
+{
+    getInstance().setImageImpl(data);
+}
+
 
 ////////////////////////////////////////////////////////////
 void ClipboardImpl::processEvents()
@@ -84,6 +98,7 @@ ClipboardImpl::ClipboardImpl()
     m_targets        = getAtom("TARGETS", false);
     m_text           = getAtom("TEXT", false);
     m_utf8String     = getAtom("UTF8_STRING", true);
+    m_imagePng       = getAtom("image/png", false);
     m_targetProperty = getAtom("SFML_CLIPBOARD_TARGET_PROPERTY", false);
 
     // Create a hidden window that will broker our clipboard interactions with X
@@ -121,9 +136,9 @@ String ClipboardImpl::getStringImpl()
     // Check if anybody owns the current selection
     if (XGetSelectionOwner(m_display.get(), m_clipboard) == None)
     {
-        m_clipboardContents.clear();
+        m_clipboardTextContents.clear();
 
-        return m_clipboardContents;
+        return m_clipboardTextContents;
     }
 
     // Process any already pending events
@@ -148,16 +163,67 @@ String ClipboardImpl::getStringImpl()
 
     // If no response was received within the time period, clear our clipboard contents
     if (!m_requestResponded)
-        m_clipboardContents.clear();
+        m_clipboardTextContents.clear();
 
-    return m_clipboardContents;
+    return m_clipboardTextContents;
 }
 
 
 ////////////////////////////////////////////////////////////
 void ClipboardImpl::setStringImpl(const String& text)
 {
-    m_clipboardContents = text;
+    m_clipboardImageContents.clear();
+    m_clipboardTextContents = text;
+
+    // Set our window as the current owner of the selection
+    XSetSelectionOwner(m_display.get(), m_clipboard, m_window, CurrentTime);
+
+    // Check if setting the selection owner was successful
+    if (XGetSelectionOwner(m_display.get(), m_clipboard) != m_window)
+        err() << "Cannot set clipboard string: Unable to get ownership of X selection" << std::endl;
+}
+
+////////////////////////////////////////////////////////////
+std::vector<std::uint8_t> ClipboardImpl::getImageImpl()
+{
+    // Check if anybody owns the current selection
+    if (XGetSelectionOwner(m_display.get(), m_clipboard) == None)
+    {
+        m_clipboardImageContents.clear();
+
+        return m_clipboardImageContents;
+    }
+
+    // Process any already pending events
+    processEvents();
+
+    m_requestResponded = false;
+
+    XConvertSelection(m_display.get(),
+                      m_clipboard,
+                      m_imagePng,
+                      m_targetProperty,
+                      m_window,
+                      CurrentTime);
+
+    const Clock clock;
+
+    // Wait for a response for up to 1 second
+    while (!m_requestResponded && (clock.getElapsedTime() < sf::seconds(1)))
+        processEvents();
+
+    // If no response was received within the time period, clear our clipboard contents
+    if (!m_requestResponded)
+        m_clipboardImageContents.clear();
+
+    return m_clipboardImageContents;
+}
+
+////////////////////////////////////////////////////////////
+void ClipboardImpl::setImageImpl(const std::vector<std::uint8_t>& data)
+{
+    m_clipboardTextContents.clear();
+    m_clipboardImageContents = data;
 
     // Set our window as the current owner of the selection
     XSetSelectionOwner(m_display.get(), m_clipboard, m_window, CurrentTime);
@@ -208,7 +274,8 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
 
             const XSelectionEvent& selectionEvent = windowEvent.xselection;
 
-            m_clipboardContents.clear();
+            m_clipboardTextContents.clear();
+            m_clipboardImageContents.clear();
 
             // If retrieving the selection fails or conversion is unsuccessful
             // we leave the contents of the clipboard empty since we don't
@@ -247,12 +314,16 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
                     // Only copy the data if the format is what we expect
                     if ((type == m_utf8String) && (format == 8))
                     {
-                        m_clipboardContents = String::fromUtf8(data, data + items);
+                        m_clipboardTextContents = String::fromUtf8(data, data + items);
                     }
                     else if ((type == XA_STRING) && (format == 8))
                     {
                         // Convert from ANSI std::string to sf::String
-                        m_clipboardContents = std::string(data, data + items);
+                        m_clipboardTextContents = std::string(data, data + items);
+                    }
+                    else if ((type == m_imagePng) && (format == 8)) 
+                    {
+                        m_clipboardImageContents.assign(data, data + items);
                     }
                 }
 
@@ -287,12 +358,21 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
                     // Respond to a request for our valid conversion targets
                     std::vector<Atom> targets;
 
-                    targets.push_back(m_targets);
-                    targets.push_back(m_text);
-                    targets.push_back(XA_STRING);
+                    if (!m_clipboardTextContents.isEmpty())
+                    {
+                        targets.push_back(m_targets);
+                        targets.push_back(m_text);
+                        targets.push_back(XA_STRING);
 
-                    if (m_utf8String != None)
-                        targets.push_back(m_utf8String);
+                        if (m_utf8String != None)
+                            targets.push_back(m_utf8String);
+                    }
+
+                    if (!m_clipboardImageContents.empty())
+                    {
+                        if (m_imagePng != None)
+                            targets.push_back(m_imagePng);
+                    }
 
                     XChangeProperty(m_display.get(),
                                     selectionRequestEvent.requestor,
@@ -318,7 +398,7 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
                     ((m_utf8String == None) && (selectionRequestEvent.target == m_text)))
                 {
                     // Respond to a request for conversion to a Latin-1 string
-                    const std::string data = m_clipboardContents.toAnsiString();
+                    const std::string data = m_clipboardTextContents.toAnsiString();
 
                     XChangeProperty(m_display.get(),
                                     selectionRequestEvent.requestor,
@@ -345,7 +425,7 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
                 {
                     // Respond to a request for conversion to a UTF-8 string
                     // or an encoding of our choosing (we always choose UTF-8)
-                    const auto data = m_clipboardContents.toUtf8();
+                    const auto data = m_clipboardTextContents.toUtf8();
 
                     XChangeProperty(m_display.get(),
                                     selectionRequestEvent.requestor,
@@ -358,6 +438,28 @@ void ClipboardImpl::processEvent(XEvent& windowEvent)
 
                     // Notify the requestor that they can read the data from their window property
                     selectionEvent.target = m_utf8String;
+
+                    XSendEvent(m_display.get(),
+                               selectionRequestEvent.requestor,
+                               True,
+                               NoEventMask,
+                               reinterpret_cast<XEvent*>(&selectionEvent));
+
+                    break;
+                }
+                if (selectionRequestEvent.target == m_imagePng)
+                {
+                    XChangeProperty(m_display.get(),
+                                    selectionRequestEvent.requestor,
+                                    selectionRequestEvent.property,
+                                    m_imagePng,
+                                    8,
+                                    PropModeReplace,
+                                    m_clipboardImageContents.data(),
+                                    static_cast<int>(m_clipboardImageContents.size()));
+
+                    // Notify the requestor that they can read the data from their window property
+                    selectionEvent.target = m_imagePng;
 
                     XSendEvent(m_display.get(),
                                selectionRequestEvent.requestor,

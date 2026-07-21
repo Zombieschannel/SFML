@@ -28,7 +28,8 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Window/Export.hpp>
-
+#include <vector>
+#include <cstdint>
 
 namespace sf
 {
@@ -68,6 +69,10 @@ namespace Clipboard
 ///
 ////////////////////////////////////////////////////////////
 SFML_WINDOW_API void setString(const String& text);
+
+[[nodiscard]] SFML_WINDOW_API std::vector<std::uint8_t> getImage();
+
+SFML_WINDOW_API void setImage(const std::vector<std::uint8_t>& data);
 } // namespace Clipboard
 
 } // namespace sf

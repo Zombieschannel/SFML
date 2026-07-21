@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <queue>
+#include <vector>
 
 
 namespace sf::priv
@@ -49,6 +50,12 @@ public:
 
     ////////////////////////////////////////////////////////////
     static void setString(const String& text);
+
+    ////////////////////////////////////////////////////////////
+    static std::vector<std::uint8_t> getImage();
+
+    ////////////////////////////////////////////////////////////
+    static void setImage(const std::vector<std::uint8_t>& data);
 
     ////////////////////////////////////////////////////////////
     static void processEvents();
@@ -70,6 +77,12 @@ private:
     void setStringImpl(const String& text);
 
     ////////////////////////////////////////////////////////////
+    std::vector<std::uint8_t> getImageImpl();
+
+    ////////////////////////////////////////////////////////////
+    void setImageImpl(const std::vector<std::uint8_t>& data);
+
+    ////////////////////////////////////////////////////////////
     void processEventsImpl();
 
     ////////////////////////////////////////////////////////////
@@ -78,15 +91,17 @@ private:
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    ::Window                   m_window{};          ///< X identifier defining our window
-    std::shared_ptr<::Display> m_display;           ///< Pointer to the display
-    Atom                       m_clipboard;         ///< X Atom identifying the CLIPBOARD selection
-    Atom                       m_targets;           ///< X Atom identifying TARGETS
-    Atom                       m_text;              ///< X Atom identifying TEXT
-    Atom                       m_utf8String;        ///< X Atom identifying UTF8_STRING
-    Atom                       m_targetProperty;    ///< X Atom identifying our destination window property
-    String                     m_clipboardContents; ///< Our clipboard contents
-    std::queue<XEvent>         m_events;            ///< Queue we use to store pending events for this window
+    ::Window                   m_window{};               ///< X identifier defining our window
+    std::shared_ptr<::Display> m_display;                ///< Pointer to the display
+    Atom                       m_clipboard;              ///< X Atom identifying the CLIPBOARD selection
+    Atom                       m_targets;                ///< X Atom identifying TARGETS
+    Atom                       m_text;                   ///< X Atom identifying TEXT
+    Atom                       m_utf8String;             ///< X Atom identifying UTF8_STRING
+    Atom                       m_imagePng;               ///< X Atom identifying image/png
+    Atom                       m_targetProperty;         ///< X Atom identifying our destination window property
+    String                     m_clipboardTextContents;  ///< Our clipboard contents
+    std::vector<std::uint8_t>  m_clipboardImageContents; ///< Clipboard image raw bytes
+    std::queue<XEvent>         m_events;                 ///< Queue we use to store pending events for this window
     bool m_requestResponded{}; ///< Holds whether our selection request has been responded to or not
 };
 

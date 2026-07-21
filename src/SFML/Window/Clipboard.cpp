@@ -30,7 +30,6 @@
 
 #include <SFML/System/String.hpp>
 
-
 namespace sf
 {
 ////////////////////////////////////////////////////////////
@@ -44,6 +43,19 @@ String Clipboard::getString()
 void Clipboard::setString(const String& text)
 {
     priv::ClipboardImpl::setString(text);
+}
+
+////////////////////////////////////////////////////////////
+std::vector<std::uint8_t> Clipboard::getImage()
+{
+    return priv::ClipboardImpl::getImage();
+}
+
+
+////////////////////////////////////////////////////////////
+void Clipboard::setImage(const std::vector<std::uint8_t>& data)
+{
+    priv::ClipboardImpl::setImage(data);
 }
 
 } // namespace sf
