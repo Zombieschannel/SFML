@@ -222,6 +222,16 @@ namespace
 
     void updatePluggedList()
     {
+        if (emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS)
+        {
+            sf::err() << "Failed to sample data of gamepads" << std::endl;
+            for (int i = 0; i < static_cast<int>(sf::Joystick::Count); ++i)
+            {
+                joysticksConnected[i] = false;
+            }
+            return;
+        }
+
         int numJoysticks = emscripten_get_num_gamepads();
 
         if (numJoysticks == EMSCRIPTEN_RESULT_NOT_SUPPORTED)
@@ -1205,6 +1215,12 @@ bool JoystickImpl::open(unsigned int index)
 {
     if (!isConnected(index))
         return false;
+    if (emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS)
+    {
+        sf::err() << "Failed to sample data of gamepads" << std::endl;
+        joysticksConnected[index] = false;
+        return false;
+    }
 
     int numJoysticks = emscripten_get_num_gamepads();
 
@@ -1250,6 +1266,13 @@ JoystickCaps JoystickImpl::getCapabilities() const
 {
     JoystickCaps caps;
 
+    if (emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS)
+    {
+        sf::err() << "Failed to sample data of gamepads" << std::endl;
+        joysticksConnected[m_index] = false;
+        return caps;
+    }
+
     EmscriptenGamepadEvent gamepadEvent;
     if (emscripten_get_gamepad_status(static_cast<int>(m_index), &gamepadEvent) != EMSCRIPTEN_RESULT_SUCCESS)
     {
@@ -1269,12 +1292,12 @@ JoystickCaps JoystickImpl::getCapabilities() const
     {
         caps.axes[Joystick::Axis::X]    = true;
         caps.axes[Joystick::Axis::Y]    = true;
-        caps.axes[Joystick::Axis::Z]    = false;
+        caps.axes[Joystick::Axis::Z]    = true;
         caps.axes[Joystick::Axis::R]    = true;
         caps.axes[Joystick::Axis::U]    = true;
-        caps.axes[Joystick::Axis::V]    = false;
-        caps.axes[Joystick::Axis::PovX] = false;
-        caps.axes[Joystick::Axis::PovY] = false;
+        caps.axes[Joystick::Axis::V]    = true;
+        caps.axes[Joystick::Axis::PovX] = true;
+        caps.axes[Joystick::Axis::PovY] = true;
     }
     else
     {
@@ -1303,6 +1326,12 @@ Joystick::Identification JoystickImpl::getIdentification() const
 JoystickState JoystickImpl::update()
 {
     JoystickState state;
+    if (emscripten_sample_gamepad_data() != EMSCRIPTEN_RESULT_SUCCESS)
+    {
+        sf::err() << "Failed to sample data of gamepads" << std::endl;
+        joysticksConnected[m_index] = false;
+        return state;
+    }
 
     EmscriptenGamepadEvent gamepadEvent;
     if (emscripten_get_gamepad_status(static_cast<int>(m_index), &gamepadEvent) != EMSCRIPTEN_RESULT_SUCCESS)
@@ -1319,11 +1348,20 @@ JoystickState JoystickImpl::update()
 
     if (std::strcmp(gamepadEvent.mapping, "standard") == 0)
     {
-        state.axes[Joystick::Axis::X] = static_cast<float>(gamepadEvent.axis[0] * 100.0);
-        state.axes[Joystick::Axis::Y] = static_cast<float>(gamepadEvent.axis[1] * 100.0);
-        state.axes[Joystick::Axis::R] = static_cast<float>(gamepadEvent.axis[2] * 100.0);
-        state.axes[Joystick::Axis::U] = static_cast<float>(gamepadEvent.axis[3] * 100.0);
+        state.axes[Joystick::Axis::X]    = static_cast<float>(gamepadEvent.axis[0] * 100.0);
+        state.axes[Joystick::Axis::Y]    = static_cast<float>(gamepadEvent.axis[1] * 100.0);
+        state.axes[Joystick::Axis::U]    = static_cast<float>(gamepadEvent.axis[2] * 100.0);
+        state.axes[Joystick::Axis::V]    = static_cast<float>(gamepadEvent.axis[3] * 100.0);
+        state.axes[Joystick::Axis::Z]    = static_cast<float>(gamepadEvent.axis[4] * 100.0);
+        state.axes[Joystick::Axis::R]    = static_cast<float>(gamepadEvent.axis[5] * 100.0);
+        state.axes[Joystick::Axis::PovX] = static_cast<float>((gamepadEvent.analogButton[15] - gamepadEvent.analogButton[14]) * 100.0);
+        state.axes[Joystick::Axis::PovY] = static_cast<float>((gamepadEvent.analogButton[13] - gamepadEvent.analogButton[12]) * 100.0);
+        state.buttons[12] = false;
+        state.buttons[13] = false;
+        state.buttons[14] = false;
+        state.buttons[15] = false;
     }
+    state.connected = gamepadEvent.connected;
 
     return state;
 }
