@@ -30,6 +30,8 @@
 #include <sstream>
 
 #include <cctype>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 
 namespace sf
@@ -57,7 +59,7 @@ std::FILE* openFile(const std::filesystem::path& filename, std::string_view mode
     const std::wstring wmode(mode.begin(), mode.end());
     return _wfopen(filename.c_str(), wmode.data());
 #else
-    return std::fopen(filename.c_str(), mode.data());
+    return std::fopen(filename.c_str(), mode.data()); 
 #endif
 }
 

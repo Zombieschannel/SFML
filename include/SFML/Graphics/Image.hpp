@@ -37,6 +37,7 @@
 #include <filesystem>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <cstddef>
@@ -63,6 +64,8 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     Image() = default;
+
+    ~Image();
 
     ////////////////////////////////////////////////////////////
     /// \brief Construct the image and fill it with a unique color
@@ -362,7 +365,7 @@ private:
     // Member data
     ////////////////////////////////////////////////////////////
     Vector2u                  m_size;   //!< Image size
-    std::vector<std::uint8_t> m_pixels; //!< Pixels of the image
+    std::pair<std::uint8_t*, std::uint32_t> m_pixels{nullptr, 0}; //!< Pixels of the image
 };
 
 } // namespace sf

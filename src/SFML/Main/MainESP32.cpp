@@ -1,10 +1,22 @@
 #include "ABCOS.h"
 
+#include "esp_littlefs.h"
+#include <filesystem>
+
 void init()
 {
     // OS::First();
     // OS::InitSD();
     // OS::InitOS();
+    esp_vfs_littlefs_conf_t conf = {
+        .base_path = "/littlefs",
+        .partition_label = "littlefs",
+        .format_if_mount_failed = true,
+        .dont_mount = false,
+    };
+
+    ESP_ERROR_CHECK(esp_vfs_littlefs_register(&conf));
+
     setCpuFrequencyMhz(240);
     ESP_LOGE("SFML environment", "initialized");
 }

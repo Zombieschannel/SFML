@@ -36,6 +36,13 @@
 #include <SFML/System/Android/ResourceStream.hpp>
 #endif
 
+#ifdef SFML_SYSTEM_ESP32
+#include "esp_heap_caps.h"
+#define STBI_MALLOC(size)          heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
+#define STBI_REALLOC(ptr, size)    heap_caps_realloc(ptr, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
+#define STBI_FREE(ptr)           heap_caps_free(ptr)
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -104,6 +111,12 @@ Image::Image(Vector2u size, Color color)
     resize(size, color);
 }
 
+Image::~Image()
+{
+    if (m_pixels.first)
+        heap_caps_free(m_pixels.first);
+}
+
 
 ////////////////////////////////////////////////////////////
 Image::Image(Vector2u size, const std::uint8_t* pixels)
@@ -142,11 +155,12 @@ void Image::resize(Vector2u size, Color color)
     if (size.x && size.y)
     {
         // Create a new pixel buffer first for exception safety's sake
-        std::vector<std::uint8_t> newPixels(std::size_t{size.x} * std::size_t{size.y} * 4);
+        std::pair<std::uint8_t*, std::uint32_t> newPixels = std::pair(static_cast<std::uint8_t*>(heap_caps_malloc(std::size_t{size.x} * std::size_t{size.y} * 4, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)), 
+            std::size_t{size.x} * std::size_t{size.y} * 4);
 
         // Fill it with the specified color
-        std::uint8_t* ptr = newPixels.data();
-        std::uint8_t* end = ptr + newPixels.size();
+        std::uint8_t* ptr = newPixels.first;
+        std::uint8_t* end = ptr + newPixels.second;
         while (ptr != end)
         {
             *ptr++ = color.r;
@@ -164,7 +178,11 @@ void Image::resize(Vector2u size, Color color)
     else
     {
         // Dump the pixel buffer
-        std::vector<std::uint8_t>().swap(m_pixels);
+        if (m_pixels.first)
+        {
+            heap_caps_free(m_pixels.first);
+            m_pixels.first = nullptr;
+        }
 
         // Assign the new size
         m_size = {};
@@ -178,7 +196,8 @@ void Image::resize(Vector2u size, const std::uint8_t* pixels)
     if (pixels && size.x && size.y)
     {
         // Create a new pixel buffer first for exception safety's sake
-        std::vector<std::uint8_t> newPixels(pixels, pixels + size.x * size.y * 4);
+        std::pair<std::uint8_t*, std::uint32_t> newPixels = std::pair(static_cast<uint8_t*>(heap_caps_malloc(size.x * size.y * 4, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)), size.x * size.y * 4);
+        memcpy(newPixels.first, pixels, newPixels.second);
 
         // Commit the new pixel buffer
         m_pixels = std::move(newPixels);
@@ -189,7 +208,11 @@ void Image::resize(Vector2u size, const std::uint8_t* pixels)
     else
     {
         // Dump the pixel buffer
-        std::vector<std::uint8_t>().swap(m_pixels);
+        if (m_pixels.first)
+        {
+            heap_caps_free(m_pixels.first);
+            m_pixels.first = nullptr;
+        }
 
         // Assign the new size
         m_size = {};
@@ -324,7 +347,7 @@ bool Image::loadFromStream(InputStream& stream)
 bool Image::saveToFile(const std::filesystem::path& filename) const
 {
     // Make sure the image is not empty
-    if (!m_pixels.empty() && m_size.x > 0 && m_size.y > 0)
+    if (m_pixels.first && m_size.x > 0 && m_size.y > 0)
     {
         // Deduce the image type from its extension
 
@@ -344,21 +367,21 @@ bool Image::saveToFile(const std::filesystem::path& filename) const
         {
             // BMP format
             std::ofstream file(filename, std::ios::binary);
-            if (stbi_write_bmp_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.data()) && file)
+            if (stbi_write_bmp_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.first) && file)
                 return true;
         }
         else if (extension == ".tga")
         {
             // TGA format
             std::ofstream file(filename, std::ios::binary);
-            if (stbi_write_tga_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.data()) && file)
+            if (stbi_write_tga_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.first) && file)
                 return true;
         }
         else if (extension == ".png")
         {
             // PNG format
             std::ofstream file(filename, std::ios::binary);
-            if (stbi_write_png_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.data(), 0) &&
+            if (stbi_write_png_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.first, 0) &&
                 file)
                 return true;
         }
@@ -366,7 +389,7 @@ bool Image::saveToFile(const std::filesystem::path& filename) const
         {
             // JPG format
             std::ofstream file(filename, std::ios::binary);
-            if (stbi_write_jpg_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.data(), 90) &&
+            if (stbi_write_jpg_to_func(writeStdOfstream, &file, convertedSize.x, convertedSize.y, 4, m_pixels.first, 90) &&
                 file)
                 return true;
         }
@@ -385,7 +408,7 @@ bool Image::saveToFile(const std::filesystem::path& filename) const
 std::optional<std::vector<std::uint8_t>> Image::saveToMemory(std::string_view format) const
 {
     // Make sure the image is not empty
-    if (!m_pixels.empty() && m_size.x > 0 && m_size.y > 0)
+    if (m_pixels.first && m_size.x > 0 && m_size.y > 0)
     {
         // Choose function based on format
         const std::string specified     = toLower(std::string(format));
@@ -396,25 +419,25 @@ std::optional<std::vector<std::uint8_t>> Image::saveToMemory(std::string_view fo
         if (specified == "bmp")
         {
             // BMP format
-            if (stbi_write_bmp_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.data()))
+            if (stbi_write_bmp_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.first))
                 return buffer;
         }
         else if (specified == "tga")
         {
             // TGA format
-            if (stbi_write_tga_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.data()))
+            if (stbi_write_tga_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.first))
                 return buffer;
         }
         else if (specified == "png")
         {
             // PNG format
-            if (stbi_write_png_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.data(), 0))
+            if (stbi_write_png_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.first, 0))
                 return buffer;
         }
         else if (specified == "jpg" || specified == "jpeg")
         {
             // JPG format
-            if (stbi_write_jpg_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.data(), 90))
+            if (stbi_write_jpg_to_func(bufferFromCallback, &buffer, convertedSize.x, convertedSize.y, 4, m_pixels.first, 90))
                 return buffer;
         }
     }
@@ -435,11 +458,11 @@ Vector2u Image::getSize() const
 void Image::createMaskFromColor(Color color, std::uint8_t alpha)
 {
     // Make sure that the image is not empty
-    if (!m_pixels.empty())
+    if (m_pixels.first)
     {
         // Replace the alpha of the pixels that match the transparent color
-        std::uint8_t* ptr = m_pixels.data();
-        std::uint8_t* end = ptr + m_pixels.size();
+        std::uint8_t* ptr = m_pixels.first;
+        std::uint8_t* end = ptr + m_pixels.second;
         while (ptr != end)
         {
             if ((ptr[0] == color.r) && (ptr[1] == color.g) && (ptr[2] == color.b) && (ptr[3] == color.a))
@@ -489,8 +512,8 @@ bool Image::copy(const Image& source, Vector2u dest, const IntRect& sourceRect, 
     const unsigned int srcStride = source.m_size.x * 4;
     const unsigned int dstStride = m_size.x * 4;
 
-    const std::uint8_t* srcPixels = source.m_pixels.data() + (srcRect.position.x + srcRect.position.y * source.m_size.x) * 4;
-    std::uint8_t* dstPixels = m_pixels.data() + (dest.x + dest.y * m_size.x) * 4;
+    const std::uint8_t* srcPixels = source.m_pixels.first + (srcRect.position.x + srcRect.position.y * source.m_size.x) * 4;
+    std::uint8_t* dstPixels = m_pixels.first + (dest.x + dest.y * m_size.x) * 4;
 
     // Copy the pixels
     if (applyAlpha)
@@ -545,7 +568,7 @@ void Image::setPixel(Vector2u coords, Color color)
     assert(coords.y < m_size.y && "Image::setPixel() y coordinate is out of bounds");
 
     const auto    index = (coords.x + coords.y * m_size.x) * 4;
-    std::uint8_t* pixel = &m_pixels[index];
+    std::uint8_t* pixel = &m_pixels.first[index];
     *pixel++            = color.r;
     *pixel++            = color.g;
     *pixel++            = color.b;
@@ -560,7 +583,7 @@ Color Image::getPixel(Vector2u coords) const
     assert(coords.y < m_size.y && "Image::getPixel() y coordinate is out of bounds");
 
     const auto          index = (coords.x + coords.y * m_size.x) * 4;
-    const std::uint8_t* pixel = &m_pixels[index];
+    const std::uint8_t* pixel = &m_pixels.first[index];
     return {pixel[0], pixel[1], pixel[2], pixel[3]};
 }
 
@@ -568,9 +591,9 @@ Color Image::getPixel(Vector2u coords) const
 ////////////////////////////////////////////////////////////
 const std::uint8_t* Image::getPixelsPtr() const
 {
-    if (!m_pixels.empty())
+    if (m_pixels.first)
     {
-        return m_pixels.data();
+        return m_pixels.first;
     }
 
     err() << "Trying to access the pixels of an empty image" << std::endl;
@@ -581,15 +604,14 @@ const std::uint8_t* Image::getPixelsPtr() const
 ////////////////////////////////////////////////////////////
 void Image::flipHorizontally()
 {
-    if (!m_pixels.empty())
+    if (m_pixels.first)
     {
         const std::size_t rowSize = m_size.x * 4;
 
         for (std::size_t y = 0; y < m_size.y; ++y)
         {
-            auto left = m_pixels.begin() + static_cast<std::vector<std::uint8_t>::iterator::difference_type>(y * rowSize);
-            auto right = m_pixels.begin() +
-                         static_cast<std::vector<std::uint8_t>::iterator::difference_type>((y + 1) * rowSize - 4);
+            std::uint8_t* left = m_pixels.first + y * rowSize;
+            std::uint8_t* right = m_pixels.first + ((y + 1) * rowSize - 4);
 
             for (std::size_t x = 0; x < m_size.x / 2; ++x)
             {
@@ -606,12 +628,12 @@ void Image::flipHorizontally()
 ////////////////////////////////////////////////////////////
 void Image::flipVertically()
 {
-    if (!m_pixels.empty())
+    if (m_pixels.first)
     {
-        const auto rowSize = static_cast<std::vector<std::uint8_t>::iterator::difference_type>(m_size.x * 4);
+        const std::uint32_t rowSize = m_size.x * 4;
 
-        auto top    = m_pixels.begin();
-        auto bottom = m_pixels.end() - rowSize;
+        std::uint8_t* top    = m_pixels.first;
+        std::uint8_t* bottom = m_pixels.first + m_pixels.second - rowSize;
 
         for (std::size_t y = 0; y < m_size.y / 2; ++y)
         {

@@ -75,4 +75,8 @@
 #include <GLES2/gl2ext.h>
 #include <GLES2/gl2platform.h>
 
+#elif defined(SFML_SYSTEM_ESP32)
+
+#include <GLES.h>
+
 #endif
