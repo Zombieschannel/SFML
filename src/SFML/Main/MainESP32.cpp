@@ -1,13 +1,10 @@
-#include "ABCOS.h"
-
 #include "esp_littlefs.h"
 #include <filesystem>
+#include "esp_log.h"
+#include "esp32-hal-cpu.h"
 
 void init()
 {
-    // OS::First();
-    // OS::InitSD();
-    // OS::InitOS();
     esp_vfs_littlefs_conf_t conf = {
         .base_path = "/littlefs",
         .partition_label = "littlefs",
@@ -16,9 +13,7 @@ void init()
     };
 
     ESP_ERROR_CHECK(esp_vfs_littlefs_register(&conf));
-
-    setCpuFrequencyMhz(240);
-    ESP_LOGE("SFML environment", "initialized");
+    setCpuFrequencyMhz(80);
 }
 
 extern int main(int argc, char* argv[]);
